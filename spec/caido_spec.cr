@@ -198,3 +198,272 @@ describe CaidoMutations::Assistant do
     end
   end
 end
+
+# New modules: FilterPresets
+describe CaidoQueries::FilterPresets do
+  describe ".all" do
+    it "generates valid query" do
+      query = CaidoQueries::FilterPresets.all
+      query.should contain("query GetFilterPresets")
+      query.should contain("filterPresets")
+      query.should contain("alias")
+      query.should contain("clause")
+    end
+  end
+
+  describe ".by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::FilterPresets.by_id("filter123")
+      query.should contain("query GetFilterPreset")
+      query.should contain(%Q(id: "filter123"))
+    end
+  end
+end
+
+describe CaidoMutations::FilterPresets do
+  describe ".create" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::FilterPresets.create("My Filter", "host:example.com")
+      mutation.should contain("mutation CreateFilterPreset")
+      mutation.should contain(%Q(name: "My Filter"))
+      mutation.should contain(%Q(clause: "host:example.com"))
+    end
+
+    it "includes alias when provided" do
+      mutation = CaidoMutations::FilterPresets.create("My Filter", "host:example.com", filter_alias: "mf")
+      mutation.should contain(%Q(alias: "mf"))
+    end
+  end
+
+  describe ".update" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::FilterPresets.update("filter123", name: "Updated Filter")
+      mutation.should contain("mutation UpdateFilterPreset")
+      mutation.should contain(%Q(id: "filter123"))
+      mutation.should contain(%Q(name: "Updated Filter"))
+    end
+  end
+
+  describe ".delete" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::FilterPresets.delete("filter123")
+      mutation.should contain("mutation DeleteFilterPreset")
+      mutation.should contain(%Q(id: "filter123"))
+      mutation.should contain("deletedId")
+    end
+  end
+end
+
+# New modules: HostedFiles
+describe CaidoQueries::HostedFiles do
+  describe ".all" do
+    it "generates valid query" do
+      query = CaidoQueries::HostedFiles.all
+      query.should contain("query GetHostedFiles")
+      query.should contain("hostedFiles")
+      query.should contain("size")
+      query.should contain("status")
+    end
+  end
+end
+
+describe CaidoMutations::HostedFiles do
+  describe ".upload" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::HostedFiles.upload("test.txt", "/tmp/test.txt")
+      mutation.should contain("mutation UploadHostedFile")
+      mutation.should contain(%Q(name: "test.txt"))
+      mutation.should contain(%Q(path: "/tmp/test.txt"))
+    end
+  end
+
+  describe ".rename" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::HostedFiles.rename("file123", "new_name.txt")
+      mutation.should contain("mutation RenameHostedFile")
+      mutation.should contain(%Q(id: "file123"))
+      mutation.should contain(%Q(name: "new_name.txt"))
+    end
+  end
+
+  describe ".delete" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::HostedFiles.delete("file123")
+      mutation.should contain("mutation DeleteHostedFile")
+      mutation.should contain(%Q(id: "file123"))
+      mutation.should contain("deletedId")
+    end
+  end
+end
+
+# New modules: Environment mutations
+describe CaidoQueries::Environments do
+  describe ".by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::Environments.by_id("env123")
+      query.should contain("query GetEnvironment")
+      query.should contain(%Q(id: "env123"))
+      query.should contain("variables")
+      query.should contain("version")
+    end
+  end
+end
+
+describe CaidoMutations::Environments do
+  describe ".create" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Environments.create("Production")
+      mutation.should contain("mutation CreateEnvironment")
+      mutation.should contain(%Q(name: "Production"))
+    end
+  end
+
+  describe ".delete" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Environments.delete("env123")
+      mutation.should contain("mutation DeleteEnvironment")
+      mutation.should contain(%Q(id: "env123"))
+      mutation.should contain("deletedId")
+    end
+  end
+
+  describe ".select" do
+    it "generates valid mutation with id" do
+      mutation = CaidoMutations::Environments.select("env123")
+      mutation.should contain("mutation SelectEnvironment")
+      mutation.should contain(%Q(id: "env123"))
+    end
+
+    it "generates valid mutation without id" do
+      mutation = CaidoMutations::Environments.select
+      mutation.should contain("mutation SelectEnvironment")
+      mutation.should contain("selectEnvironment")
+    end
+  end
+end
+
+# New: Plugin install mutation
+describe CaidoMutations::Plugins do
+  describe ".install" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Plugins.install("my-plugin")
+      mutation.should contain("mutation InstallPluginPackage")
+      mutation.should contain(%Q(manifestId: "my-plugin"))
+    end
+  end
+end
+
+# New: Tasks query
+describe CaidoQueries::Tasks do
+  describe ".all" do
+    it "generates valid query" do
+      query = CaidoQueries::Tasks.all
+      query.should contain("query GetTasks")
+      query.should contain("tasks")
+      query.should contain("__typename")
+      query.should contain("ReplayTask")
+    end
+  end
+end
+
+# New: Response query
+describe CaidoQueries::Responses do
+  describe ".by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::Responses.by_id("resp123")
+      query.should contain("query GetResponse")
+      query.should contain(%Q(id: "resp123"))
+      query.should contain("statusCode")
+      query.should contain("raw")
+    end
+  end
+end
+
+# New: Replay entry and session entries
+describe CaidoQueries::Replay do
+  describe ".entry_by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::Replay.entry_by_id("entry123")
+      query.should contain("query GetReplayEntry")
+      query.should contain(%Q(id: "entry123"))
+      query.should contain("connection")
+      query.should contain("session")
+    end
+  end
+
+  describe ".session_entries" do
+    it "generates valid query" do
+      query = CaidoQueries::Replay.session_entries("session123")
+      query.should contain("query GetReplaySessionEntries")
+      query.should contain(%Q(id: "session123"))
+      query.should contain("entries")
+    end
+  end
+end
+
+# New: Replay set_active_entry mutation
+describe CaidoMutations::Replay do
+  describe ".set_active_entry" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Replay.set_active_entry("session123", "entry456")
+      mutation.should contain("mutation SetActiveReplaySessionEntry")
+      mutation.should contain(%Q(id: "session123"))
+      mutation.should contain(%Q(entryId: "entry456"))
+    end
+  end
+end
+
+# Updated fields tests
+describe CaidoQueries::Scopes do
+  describe ".all" do
+    it "includes indexed field" do
+      query = CaidoQueries::Scopes.all
+      query.should contain("indexed")
+    end
+  end
+end
+
+describe CaidoQueries::Findings do
+  describe ".by_id" do
+    it "includes host, path, hidden fields" do
+      query = CaidoQueries::Findings.by_id("finding123")
+      query.should contain("host")
+      query.should contain("path")
+      query.should contain("hidden")
+    end
+  end
+end
+
+describe CaidoQueries::Projects do
+  describe ".all" do
+    it "includes new fields from JS SDK" do
+      query = CaidoQueries::Projects.all
+      query.should contain("temporary")
+      query.should contain("readOnly")
+      query.should contain("updatedAt")
+    end
+  end
+end
+
+describe CaidoQueries::Workflows do
+  describe ".all" do
+    it "includes new fields from JS SDK" do
+      query = CaidoQueries::Workflows.all
+      query.should contain("readOnly")
+      query.should contain("createdAt")
+      query.should contain("updatedAt")
+    end
+  end
+end
+
+describe CaidoQueries::Viewer do
+  describe ".info" do
+    it "includes union types" do
+      query = CaidoQueries::Viewer.info
+      query.should contain("CloudUser")
+      query.should contain("GuestUser")
+      query.should contain("ScriptUser")
+      query.should contain("__typename")
+    end
+  end
+end

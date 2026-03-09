@@ -207,16 +207,77 @@ query = CaidoQueries::Automate.tasks(first: 50)
 response = client.query query
 ```
 
+### Responses
+
+Get HTTP responses by ID.
+
+```crystal
+# Get a single response by ID
+query = CaidoQueries::Responses.by_id("response-id")
+response = client.query query
+```
+
+### Filter Presets
+
+Manage saved filter presets.
+
+```crystal
+# Get all filter presets
+query = CaidoQueries::FilterPresets.all
+response = client.query query
+
+# Get a single filter preset
+query = CaidoQueries::FilterPresets.by_id("filter-id")
+response = client.query query
+```
+
+### Hosted Files
+
+Manage hosted files on the Caido instance.
+
+```crystal
+# Get all hosted files
+query = CaidoQueries::HostedFiles.all
+response = client.query query
+```
+
+### Environments
+
+Manage environment variables.
+
+```crystal
+# Get all environments
+query = CaidoQueries::Environments.all
+response = client.query query
+
+# Get a single environment by ID
+query = CaidoQueries::Environments.by_id("env-id")
+response = client.query query
+
+# Get environment context (selected environment)
+query = CaidoQueries::Environments.context
+response = client.query query
+```
+
+### Tasks
+
+Manage running tasks.
+
+```crystal
+# Get all tasks
+query = CaidoQueries::Tasks.all
+response = client.query query
+```
+
 ### Additional Query Modules
 
-- **Viewer**: Get current user information
+- **Viewer**: Get current user information (CloudUser, GuestUser, ScriptUser)
 - **Runtime**: Get Caido runtime information
-- **InstanceSettings**: Get and manage instance settings
+- **InstanceSettings**: Get instance settings (AI providers, analytics, onboarding)
 - **DNS**: Manage DNS rewrites and upstreams
 - **UpstreamProxies**: Manage HTTP and SOCKS upstream proxies
 - **Tamper**: Manage request/response tampering rules
 - **Assistant**: AI assistant sessions (requires cloud)
-- **Environments**: Manage environment variables (requires cloud)
 - **Plugins**: Manage installed plugins
 
 ## Mutation Modules
@@ -420,7 +481,14 @@ mutation = CaidoMutations::Replay.move_session(
 )
 response = client.query mutation
 
-# Start a replay task (requires cloud)
+# Set active replay session entry
+mutation = CaidoMutations::Replay.set_active_entry(
+  session_id: "session-id",
+  entry_id: "entry-id"
+)
+response = client.query mutation
+
+# Start a replay task
 mutation = CaidoMutations::Replay.start_task(session_id: "session-id")
 response = client.query mutation
 ```
@@ -491,9 +559,91 @@ mutation = CaidoMutations::Tamper.delete_rule(rule_id: "rule-id")
 response = client.query mutation
 ```
 
+### Environment Mutations
+
+Manage environments.
+
+```crystal
+# Create an environment
+mutation = CaidoMutations::Environments.create("Production")
+response = client.query mutation
+
+# Update an environment
+mutation = CaidoMutations::Environments.update("env-id", name: "Staging")
+response = client.query mutation
+
+# Delete an environment
+mutation = CaidoMutations::Environments.delete("env-id")
+response = client.query mutation
+
+# Select an active environment
+mutation = CaidoMutations::Environments.select("env-id")
+response = client.query mutation
+```
+
+### Filter Preset Mutations
+
+Manage saved filter presets.
+
+```crystal
+# Create a filter preset
+mutation = CaidoMutations::FilterPresets.create(
+  "My Filter",
+  "host:example.com",
+  filter_alias: "mf"
+)
+response = client.query mutation
+
+# Update a filter preset
+mutation = CaidoMutations::FilterPresets.update("filter-id", name: "Updated Filter")
+response = client.query mutation
+
+# Delete a filter preset
+mutation = CaidoMutations::FilterPresets.delete("filter-id")
+response = client.query mutation
+```
+
+### Hosted File Mutations
+
+Manage hosted files.
+
+```crystal
+# Upload a hosted file
+mutation = CaidoMutations::HostedFiles.upload("test.txt", "/path/to/file")
+response = client.query mutation
+
+# Rename a hosted file
+mutation = CaidoMutations::HostedFiles.rename("file-id", "new_name.txt")
+response = client.query mutation
+
+# Delete a hosted file
+mutation = CaidoMutations::HostedFiles.delete("file-id")
+response = client.query mutation
+```
+
+### Instance Settings Mutation
+
+Update instance settings.
+
+```crystal
+# Set instance settings (pass raw GraphQL input)
+mutation = CaidoMutations::InstanceSettings.set("{ aiProviders: { anthropic: { apiKey: \"sk-xxx\" } } }")
+response = client.query mutation
+```
+
+### Plugin Mutations
+
+Manage plugins.
+
+```crystal
+# Install a plugin package
+mutation = CaidoMutations::Plugins.install("plugin-manifest-id")
+response = client.query mutation
+```
+
 ### Additional Mutation Modules
 
-- **Projects**: Create, select, delete, and rename projects (requires cloud)
+- **Projects**: Create, select, delete, and rename projects
 - **DNS**: Manage DNS rewrites and upstreams
 - **UpstreamProxies**: Manage HTTP and SOCKS upstream proxies
 - **Assistant**: AI assistant operations (requires cloud)

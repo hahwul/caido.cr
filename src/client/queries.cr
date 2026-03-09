@@ -275,6 +275,7 @@ module CaidoQueries
             name
             allowlist
             denylist
+            indexed
           }
         }
       )
@@ -290,6 +291,7 @@ module CaidoQueries
             name
             allowlist
             denylist
+            indexed
           }
         }
       )
@@ -298,30 +300,34 @@ module CaidoQueries
 
   module Findings
     # Get findings with pagination
-    def self.all(after : String? = nil, first : Int32 = 50)
+    def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      filter_clause = filter ? %Q(filter: { reporter: "#{CaidoUtils.escape_graphql_string(filter)}" }) : ""
+
       %Q(
         query GetFindings {
-          findings(#{after_clause} first: #{first}) {
+          findings(#{after_clause} first: #{first} #{filter_clause}) {
             pageInfo {
               hasNextPage
               hasPreviousPage
               startCursor
               endCursor
             }
-            nodes {
-              id
-              title
-              description
-              reporter
-              dedupeKey
-              createdAt
-              request {
+            edges {
+              cursor
+              node {
                 id
+                title
+                description
+                reporter
+                dedupeKey
                 host
                 path
-                method
+                hidden
+                createdAt
+                request {
+                  id
+                }
               }
             }
           }
@@ -340,14 +346,12 @@ module CaidoQueries
             description
             reporter
             dedupeKey
+            host
+            path
+            hidden
             createdAt
             request {
               id
-              host
-              path
-              query
-              method
-              raw
             }
           }
         }
@@ -376,6 +380,10 @@ module CaidoQueries
             version
             status
             size
+            temporary
+            readOnly
+            createdAt
+            updatedAt
             backups {
               id
               name
@@ -388,7 +396,7 @@ module CaidoQueries
       )
     end
 
-    # Get all projects (requires cloud)
+    # Get all projects
     def self.all
       %Q(
         query GetProjects {
@@ -398,7 +406,11 @@ module CaidoQueries
             path
             version
             status
+            size
+            temporary
+            readOnly
             createdAt
+            updatedAt
           }
         }
       )
@@ -417,6 +429,9 @@ module CaidoQueries
             enabled
             global
             definition
+            readOnly
+            createdAt
+            updatedAt
           }
         }
       )
@@ -434,6 +449,9 @@ module CaidoQueries
             enabled
             global
             definition
+            readOnly
+            createdAt
+            updatedAt
           }
         }
       )
@@ -507,6 +525,95 @@ module CaidoQueries
             collection {
               id
               name
+            }
+          }
+        }
+      )
+    end
+
+    # Get a single replay entry by ID
+    def self.entry_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetReplayEntry {
+          replayEntry(id: "#{escaped_id}") {
+            id
+            createdAt
+            error
+            raw
+            connection {
+              host
+              port
+              isTLS
+            }
+            request {
+              id
+              host
+              port
+              method
+              path
+              query
+              isTls
+              createdAt
+              raw
+              response {
+                id
+                statusCode
+                roundtripTime
+                length
+                createdAt
+                raw
+              }
+            }
+            session {
+              id
+            }
+          }
+        }
+      )
+    end
+
+    # Get entries for a replay session
+    def self.session_entries(session_id : String, after : String? = nil, first : Int32 = 50)
+      escaped_id = CaidoUtils.escape_graphql_string(session_id)
+      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+
+      %Q(
+        query GetReplaySessionEntries {
+          replaySession(id: "#{escaped_id}") {
+            entries(#{after_clause} first: #{first}) {
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+              }
+              edges {
+                cursor
+                node {
+                  id
+                  createdAt
+                  error
+                  connection {
+                    host
+                    port
+                    isTLS
+                  }
+                  request {
+                    id
+                    host
+                    port
+                    method
+                    path
+                    query
+                    isTls
+                    createdAt
+                  }
+                  session {
+                    id
+                  }
+                }
+              }
             }
           }
         }
@@ -620,10 +727,31 @@ module CaidoQueries
       %Q(
         query GetViewer {
           viewer {
-            id
-            username
-            settings {
-              data
+            ... on CloudUser {
+              __typename
+              id
+              profile {
+                identity {
+                  email
+                  name
+                }
+                subscription {
+                  plan {
+                    name
+                  }
+                  entitlements {
+                    name
+                  }
+                }
+              }
+            }
+            ... on GuestUser {
+              __typename
+              id
+            }
+            ... on ScriptUser {
+              __typename
+              id
             }
           }
         }
@@ -653,29 +781,28 @@ module CaidoQueries
       %Q(
         query GetInstanceSettings {
           instanceSettings {
-            theme
-            language
-            license {
-              name
-              expiry
-            }
-            ai {
-              providers {
-                anthropic {
-                  apiKey
-                }
-                openai {
-                  apiKey
-                  url
-                }
-                google {
-                  apiKey
-                }
-                openrouter {
-                  apiKey
-                }
+            aiProviders {
+              anthropic {
+                apiKey
               }
-              model
+              google {
+                apiKey
+              }
+              openai {
+                apiKey
+                url
+              }
+              openrouter {
+                apiKey
+              }
+            }
+            analytic {
+              enabled
+              cloud
+              local
+            }
+            onboarding {
+              analytic
             }
           }
         }
@@ -833,14 +960,38 @@ module CaidoQueries
   end
 
   module Environments
-    # Get all environments (requires cloud)
+    # Get all environments
     def self.all
       %Q(
         query GetEnvironments {
           environments {
             id
             name
-            data
+            variables {
+              name
+              value
+              kind
+            }
+            version
+          }
+        }
+      )
+    end
+
+    # Get a single environment by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetEnvironment {
+          environment(id: "#{escaped_id}") {
+            id
+            name
+            variables {
+              name
+              value
+              kind
+            }
+            version
           }
         }
       )
@@ -865,11 +1016,102 @@ module CaidoQueries
         query GetPluginPackages {
           pluginPackages {
             id
+            manifestId
+            plugins {
+              __typename
+              id
+              manifestId
+              enabled
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module FilterPresets
+    # Get all filter presets
+    def self.all
+      %Q(
+        query GetFilterPresets {
+          filterPresets {
+            id
             name
-            version
-            author
-            description
-            enabled
+            alias
+            clause
+          }
+        }
+      )
+    end
+
+    # Get a single filter preset by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetFilterPreset {
+          filterPreset(id: "#{escaped_id}") {
+            id
+            name
+            alias
+            clause
+          }
+        }
+      )
+    end
+  end
+
+  module HostedFiles
+    # Get all hosted files
+    def self.all
+      %Q(
+        query GetHostedFiles {
+          hostedFiles {
+            id
+            name
+            path
+            size
+            status
+            createdAt
+            updatedAt
+          }
+        }
+      )
+    end
+  end
+
+  module Tasks
+    # Get all tasks
+    def self.all
+      %Q(
+        query GetTasks {
+          tasks {
+            __typename
+            id
+            createdAt
+            ... on ReplayTask {
+              replayEntry {
+                id
+              }
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module Responses
+    # Get a single response by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetResponse {
+          response(id: "#{escaped_id}") {
+            id
+            statusCode
+            roundtripTime
+            length
+            createdAt
+            raw
           }
         }
       )

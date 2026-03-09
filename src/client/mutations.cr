@@ -650,7 +650,29 @@ module CaidoMutations
       )
     end
 
-    # Start a replay task (requires cloud)
+    # Set active replay session entry
+    def self.set_active_entry(session_id : String, entry_id : String)
+      escaped_session_id = CaidoUtils.escape_graphql_string(session_id)
+      escaped_entry_id = CaidoUtils.escape_graphql_string(entry_id)
+      %Q(
+        mutation SetActiveReplaySessionEntry {
+          setActiveReplaySessionEntry(id: "#{escaped_session_id}", entryId: "#{escaped_entry_id}") {
+            session {
+              id
+              name
+              activeEntry {
+                id
+              }
+              collection {
+                id
+              }
+            }
+          }
+        }
+      )
+    end
+
+    # Start a replay task
     def self.start_task(session_id : String)
       escaped_id = CaidoUtils.escape_graphql_string(session_id)
       %Q(
@@ -1312,7 +1334,264 @@ module CaidoMutations
       %Q(
         mutation CancelTask {
           cancelTask(id: "#{escaped_id}") {
-            success
+            cancelledId
+          }
+        }
+      )
+    end
+  end
+
+  module Environments
+    # Create an environment
+    def self.create(name : String)
+      escaped_name = CaidoUtils.escape_graphql_string(name)
+      %Q(
+        mutation CreateEnvironment {
+          createEnvironment(input: { name: "#{escaped_name}" }) {
+            environment {
+              id
+              name
+              variables {
+                name
+                value
+                kind
+              }
+              version
+            }
+          }
+        }
+      )
+    end
+
+    # Update an environment
+    def self.update(environment_id : String, name : String? = nil, version : String? = nil)
+      escaped_id = CaidoUtils.escape_graphql_string(environment_id)
+      updates = [] of String
+      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
+      updates << %Q(version: "#{CaidoUtils.escape_graphql_string(version.not_nil!)}") if version
+
+      %Q(
+        mutation UpdateEnvironment {
+          updateEnvironment(id: "#{escaped_id}", input: { #{updates.join(", ")} }) {
+            environment {
+              id
+              name
+              variables {
+                name
+                value
+                kind
+              }
+              version
+            }
+          }
+        }
+      )
+    end
+
+    # Delete an environment
+    def self.delete(environment_id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(environment_id)
+      %Q(
+        mutation DeleteEnvironment {
+          deleteEnvironment(id: "#{escaped_id}") {
+            deletedId
+          }
+        }
+      )
+    end
+
+    # Select an active environment
+    def self.select(environment_id : String? = nil)
+      id_clause = environment_id ? %Q(id: "#{CaidoUtils.escape_graphql_string(environment_id)}") : ""
+      %Q(
+        mutation SelectEnvironment {
+          selectEnvironment(#{id_clause}) {
+            environment {
+              id
+              name
+              variables {
+                name
+                value
+                kind
+              }
+              version
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module FilterPresets
+    # Create a filter preset
+    def self.create(name : String, clause : String, filter_alias : String? = nil)
+      escaped_name = CaidoUtils.escape_graphql_string(name)
+      escaped_clause = CaidoUtils.escape_graphql_string(clause)
+      alias_clause = filter_alias ? %Q(alias: "#{CaidoUtils.escape_graphql_string(filter_alias)}") : ""
+
+      %Q(
+        mutation CreateFilterPreset {
+          createFilterPreset(input: {
+            name: "#{escaped_name}",
+            clause: "#{escaped_clause}",
+            #{alias_clause}
+          }) {
+            filter {
+              id
+              name
+              alias
+              clause
+            }
+          }
+        }
+      )
+    end
+
+    # Update a filter preset
+    def self.update(filter_id : String, name : String? = nil, clause : String? = nil, filter_alias : String? = nil)
+      escaped_id = CaidoUtils.escape_graphql_string(filter_id)
+      updates = [] of String
+      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
+      updates << %Q(clause: "#{CaidoUtils.escape_graphql_string(clause.not_nil!)}") if clause
+      updates << %Q(alias: "#{CaidoUtils.escape_graphql_string(filter_alias.not_nil!)}") if filter_alias
+
+      %Q(
+        mutation UpdateFilterPreset {
+          updateFilterPreset(id: "#{escaped_id}", input: { #{updates.join(", ")} }) {
+            filter {
+              id
+              name
+              alias
+              clause
+            }
+          }
+        }
+      )
+    end
+
+    # Delete a filter preset
+    def self.delete(filter_id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(filter_id)
+      %Q(
+        mutation DeleteFilterPreset {
+          deleteFilterPreset(id: "#{escaped_id}") {
+            deletedId
+          }
+        }
+      )
+    end
+  end
+
+  module HostedFiles
+    # Upload a hosted file
+    def self.upload(name : String, path : String)
+      escaped_name = CaidoUtils.escape_graphql_string(name)
+      escaped_path = CaidoUtils.escape_graphql_string(path)
+      %Q(
+        mutation UploadHostedFile {
+          uploadHostedFile(input: { name: "#{escaped_name}", path: "#{escaped_path}" }) {
+            hostedFile {
+              id
+              name
+              path
+              size
+              status
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      )
+    end
+
+    # Rename a hosted file
+    def self.rename(file_id : String, name : String)
+      escaped_id = CaidoUtils.escape_graphql_string(file_id)
+      escaped_name = CaidoUtils.escape_graphql_string(name)
+      %Q(
+        mutation RenameHostedFile {
+          renameHostedFile(id: "#{escaped_id}", name: "#{escaped_name}") {
+            hostedFile {
+              id
+              name
+              path
+              size
+              status
+              createdAt
+              updatedAt
+            }
+          }
+        }
+      )
+    end
+
+    # Delete a hosted file
+    def self.delete(file_id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(file_id)
+      %Q(
+        mutation DeleteHostedFile {
+          deleteHostedFile(id: "#{escaped_id}") {
+            deletedId
+          }
+        }
+      )
+    end
+  end
+
+  module InstanceSettings
+    # Set instance settings
+    def self.set(input : String)
+      %Q(
+        mutation SetInstanceSettings {
+          setInstanceSettings(input: #{input}) {
+            settings {
+              aiProviders {
+                anthropic {
+                  apiKey
+                }
+                google {
+                  apiKey
+                }
+                openai {
+                  apiKey
+                  url
+                }
+                openrouter {
+                  apiKey
+                }
+              }
+              analytic {
+                enabled
+                cloud
+                local
+              }
+              onboarding {
+                analytic
+              }
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module Plugins
+    # Install a plugin package
+    def self.install(manifest_id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(manifest_id)
+      %Q(
+        mutation InstallPluginPackage {
+          installPluginPackage(input: { manifestId: "#{escaped_id}" }) {
+            package {
+              id
+              manifestId
+              plugins {
+                __typename
+                id
+                manifestId
+                enabled
+              }
+            }
           }
         }
       )
