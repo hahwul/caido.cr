@@ -1,6 +1,6 @@
 # GraphQL Endpoint Coverage
 
-This document lists the GraphQL endpoints from the [Caido GraphQL schema](https://github.com/caido/graphql-explorer/blob/main/src/assets/schema.graphql) and their implementation status in caido-crystal.
+This document lists the GraphQL endpoints from the [Caido GraphQL schema](https://github.com/caido/graphql-explorer/blob/main/src/assets/schema.graphql) and their implementation status in caido.
 
 ## Query Endpoints (QueryRoot)
 

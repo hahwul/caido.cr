@@ -6,7 +6,7 @@ require "../src/client/mutations"
 # Initialize the Caido client
 client = CaidoClient.new "http://localhost:8080/graphql"
 
-puts "=== Caido Crystal Library - Enhanced Examples ==="
+puts "=== Caido Library - Enhanced Examples ==="
 puts
 
 # Example 1: Get all requests using the helper

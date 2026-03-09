@@ -1,2 +1,2 @@
 require "spec"
-require "../src/caido-crystal"
+require "../src/caido"

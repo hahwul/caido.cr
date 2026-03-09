@@ -1,4 +1,4 @@
-# Utility functions for Caido Crystal client
+# Utility functions for Caido client
 
 module CaidoUtils
   # Escapes a string for safe use in GraphQL queries

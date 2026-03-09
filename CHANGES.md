@@ -39,7 +39,7 @@ The repository now has:
 
 **Example of new usage:**
 ```crystal
-require "caido-crystal"
+require "caido"
 
 client = CaidoClient.new "http://localhost:8080/graphql"
 

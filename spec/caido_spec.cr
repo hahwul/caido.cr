@@ -1,8 +1,8 @@
 require "./spec_helper"
 
-describe Caido::Crystal do
+describe Caido do
   it "has a version" do
-    Caido::Crystal::VERSION.should eq("0.1.0")
+    Caido::VERSION.should eq("0.1.0")
   end
 end
 

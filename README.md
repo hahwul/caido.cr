@@ -15,8 +15,8 @@ Add this to your application's `shard.yml`:
 
 ```yaml
 dependencies:
-  caido-crystal:
-    github: hahwul/caido-crystal
+  caido:
+    github: hahwul/caido.cr
 ```
 
 Run `shards install` to install dependencies.
@@ -26,7 +26,7 @@ Run `shards install` to install dependencies.
 ### Basic Usage
 
 ```crystal
-require "caido-crystal"
+require "caido"
 
 # Initialize the client
 client = CaidoClient.new "http://localhost:8080/graphql"
@@ -115,7 +115,7 @@ crystal spec
 
 ## Contributing
 
-1. Fork it (<https://github.com/hahwul/caido-crystal/fork>)
+1. Fork it (<https://github.com/hahwul/caido.cr/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)

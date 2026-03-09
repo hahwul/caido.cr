@@ -1,6 +1,6 @@
 # Caido GraphQL Endpoints
 
-This document provides an overview of the available GraphQL endpoints in the caido-crystal library.
+This document provides an overview of the available GraphQL endpoints in the caido library.
 
 ## Overview
 
@@ -14,8 +14,8 @@ Add this to your application's `shard.yml`:
 
 ```yaml
 dependencies:
-  caido-crystal:
-    github: hahwul/caido-crystal
+  caido:
+    github: hahwul/caido.cr
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ dependencies:
 ### Basic Setup
 
 ```crystal
-require "caido-crystal"
+require "caido"
 
 client = CaidoClient.new "http://localhost:8080/graphql"
 ```
