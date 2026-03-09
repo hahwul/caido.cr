@@ -1,104 +1,146 @@
-// Search functionality for caido.cr documentation
-let searchIndex = null;
-let fuse = null;
+(function () {
+  var searchData = null;
+  var activeIndex = -1;
+  var overlay = document.getElementById('searchOverlay');
+  var input = document.getElementById('searchInput');
+  var resultsEl = document.getElementById('searchResults');
 
-function toggleSearch() {
-  const overlay = document.getElementById('searchOverlay');
-  const input = document.getElementById('searchInput');
-  const isActive = overlay.classList.contains('active');
+  function loadSearchData(cb) {
+    if (searchData) return cb(searchData);
+    var base = document.querySelector('link[rel="stylesheet"]').href;
+    var searchUrl = base.substring(0, base.indexOf('/css/')) + '/search.json';
+    fetch(searchUrl)
+      .then(function (r) { return r.json(); })
+      .then(function (data) { searchData = data; cb(data); })
+      .catch(function () { searchData = []; cb([]); });
+  }
 
-  if (isActive) {
-    overlay.classList.remove('active');
-    input.value = '';
-    document.getElementById('searchResults').innerHTML = '';
-  } else {
+  window.openSearch = function () {
     overlay.classList.add('active');
-    setTimeout(() => input.focus(), 100);
-    loadSearchIndex();
-  }
-}
+    input.value = '';
+    resultsEl.innerHTML = '';
+    activeIndex = -1;
+    input.focus();
+    loadSearchData(function () {});
+  };
 
-async function loadSearchIndex() {
-  if (searchIndex) return;
+  window.closeSearch = function () {
+    overlay.classList.remove('active');
+    activeIndex = -1;
+  };
 
-  try {
-    const response = await fetch('/search.json');
-    searchIndex = await response.json();
-
-    // Load Fuse.js from CDN if not already loaded
-    if (typeof Fuse === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js';
-      script.onload = () => initFuse();
-      document.head.appendChild(script);
-    } else {
-      initFuse();
-    }
-  } catch (e) {
-    console.error('Failed to load search index:', e);
-  }
-}
-
-function initFuse() {
-  fuse = new Fuse(searchIndex, {
-    keys: ['title', 'content'],
-    threshold: 0.3,
-    includeMatches: true,
-    minMatchCharLength: 2,
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('searchInput');
-  if (input) {
-    input.addEventListener('input', (e) => {
-      const query = e.target.value.trim();
-      if (query.length < 2 || !fuse) {
-        document.getElementById('searchResults').innerHTML = '';
-        return;
-      }
-
-      const results = fuse.search(query).slice(0, 8);
-      const resultsEl = document.getElementById('searchResults');
-
-      if (results.length === 0) {
-        resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-title">No results found</div></div>';
-        return;
-      }
-
-      resultsEl.innerHTML = results.map(r => {
-        const item = r.item;
-        let snippet = '';
-        if (item.content) {
-          const idx = item.content.toLowerCase().indexOf(query.toLowerCase());
-          if (idx >= 0) {
-            const start = Math.max(0, idx - 40);
-            const end = Math.min(item.content.length, idx + query.length + 60);
-            snippet = (start > 0 ? '...' : '') +
-              item.content.slice(start, idx) +
-              '<mark>' + item.content.slice(idx, idx + query.length) + '</mark>' +
-              item.content.slice(idx + query.length, end) +
-              (end < item.content.length ? '...' : '');
-          } else {
-            snippet = item.content.slice(0, 100) + '...';
-          }
-        }
-        return `<div class="search-result-item"><a href="${item.permalink || item.url || '#'}"><div class="search-result-title">${item.title}</div><div class="search-result-snippet">${snippet}</div></a></div>`;
-      }).join('');
-    });
-  }
-
-  // Cmd+K shortcut
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
-      toggleSearch();
-    }
-    if (e.key === 'Escape') {
-      const overlay = document.getElementById('searchOverlay');
-      if (overlay && overlay.classList.contains('active')) {
-        toggleSearch();
+      if (overlay.classList.contains('active')) {
+        closeSearch();
+      } else {
+        openSearch();
       }
     }
+    if (e.key === 'Escape' && overlay.classList.contains('active')) {
+      closeSearch();
+    }
   });
-});
+
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('(' + escaped + ')', 'gi');
+    return escapeHtml(text).replace(re, '<mark>$1</mark>');
+  }
+
+  function getSnippet(content, query) {
+    var lower = content.toLowerCase();
+    var idx = lower.indexOf(query.toLowerCase());
+    var start = Math.max(0, idx - 60);
+    var end = Math.min(content.length, idx + query.length + 100);
+    var snippet = content.substring(start, end).replace(/\s+/g, ' ').trim();
+    if (start > 0) snippet = '...' + snippet;
+    if (end < content.length) snippet = snippet + '...';
+    return snippet;
+  }
+
+  function search(query) {
+    if (!searchData || !query.trim()) {
+      resultsEl.innerHTML = '';
+      activeIndex = -1;
+      return;
+    }
+    var q = query.trim().toLowerCase();
+    var results = [];
+    for (var i = 0; i < searchData.length; i++) {
+      var item = searchData[i];
+      var titleIdx = item.title.toLowerCase().indexOf(q);
+      var contentIdx = item.content.toLowerCase().indexOf(q);
+      if (titleIdx !== -1 || contentIdx !== -1) {
+        var score = titleIdx !== -1 ? 100 - titleIdx : contentIdx;
+        results.push({ item: item, score: score });
+      }
+    }
+    results.sort(function (a, b) { return b.score - a.score; });
+    results = results.slice(0, 10);
+
+    if (results.length === 0) {
+      resultsEl.innerHTML = '<div class="search-no-results">No results for "' + escapeHtml(query) + '"</div>';
+      activeIndex = -1;
+      return;
+    }
+
+    var html = '';
+    for (var j = 0; j < results.length; j++) {
+      var r = results[j].item;
+      var snippet = getSnippet(r.content, query.trim());
+      html += '<a class="search-result-item" href="' + r.url + '" data-index="' + j + '">'
+        + '<div class="search-result-title">' + highlightMatch(r.title, query.trim()) + '</div>'
+        + '<div class="search-result-snippet">' + highlightMatch(snippet, query.trim()) + '</div>'
+        + '</a>';
+    }
+    html += '<div class="search-hint"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> open</span><span><kbd>ESC</kbd> close</span></div>';
+    resultsEl.innerHTML = html;
+    activeIndex = -1;
+  }
+
+  function updateActive() {
+    var items = resultsEl.querySelectorAll('.search-result-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle('active', i === activeIndex);
+    }
+    if (activeIndex >= 0 && items[activeIndex]) {
+      items[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  if (input) {
+    input.addEventListener('input', function () {
+      loadSearchData(function () { search(input.value); });
+    });
+
+    input.addEventListener('keydown', function (e) {
+      var items = resultsEl.querySelectorAll('.search-result-item');
+      var count = items.length;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % count;
+        updateActive();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + count) % count;
+        updateActive();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex >= 0 && items[activeIndex]) {
+          window.location.href = items[activeIndex].href;
+        } else if (items.length > 0) {
+          window.location.href = items[0].href;
+        }
+      }
+    });
+  }
+})();
