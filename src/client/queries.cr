@@ -8,7 +8,7 @@ module CaidoQueries
     def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
       filter_clause = CaidoUtils.build_filter_clause(filter)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetRequests {
           requests(#{after_clause} first: #{first} #{filter_clause}) {
@@ -95,7 +95,7 @@ module CaidoQueries
     # Get requests by offset (alternative pagination)
     def self.by_offset(offset : Int32 = 0, limit : Int32 = 50, filter : String? = nil)
       filter_clause = CaidoUtils.build_filter_clause(filter)
-      
+
       %Q(
         query GetRequestsByOffset {
           requestsByOffset(offset: #{offset} limit: #{limit} #{filter_clause}) {
@@ -123,13 +123,46 @@ module CaidoQueries
         }
       )
     end
+
+    # Get the offset of a specific request
+    def self.request_offset(id : String, filter : String? = nil)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      filter_clause = CaidoUtils.build_filter_clause(filter)
+
+      %Q(
+        query GetRequestOffset {
+          requestOffset(id: "#{escaped_id}" #{filter_clause}) {
+            offset
+          }
+        }
+      )
+    end
+
+    # Get a single response by ID
+    def self.response_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetResponse {
+          response(id: "#{escaped_id}") {
+            id
+            statusCode
+            roundtripTime
+            length
+            createdAt
+            alteration
+            edited
+            raw
+          }
+        }
+      )
+    end
   end
 
   module Sitemap
     # Get root sitemap entries
     def self.root_entries(scope_id : String? = nil)
       scope_clause = scope_id ? %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") : ""
-      
+
       %Q(
         query GetSitemapRootEntries {
           sitemapRootEntries(#{scope_clause}) {
@@ -200,7 +233,7 @@ module CaidoQueries
     def self.entries(after : String? = nil, first : Int32 = 50, filter : String? = nil)
       filter_clause = CaidoUtils.build_filter_clause(filter)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetInterceptEntries {
           interceptEntries(#{after_clause} first: #{first} #{filter_clause}) {
@@ -263,6 +296,97 @@ module CaidoQueries
         }
       )
     end
+
+    # Get intercept entries by offset
+    def self.entries_by_offset(offset : Int32 = 0, limit : Int32 = 50, filter : String? = nil)
+      filter_clause = CaidoUtils.build_filter_clause(filter)
+
+      %Q(
+        query GetInterceptEntriesByOffset {
+          interceptEntriesByOffset(offset: #{offset} limit: #{limit} #{filter_clause}) {
+            nodes {
+              id
+              kind
+              request {
+                id
+                host
+                port
+                path
+                query
+                method
+                isTls
+              }
+            }
+          }
+        }
+      )
+    end
+
+    # Get a single intercept entry by ID
+    def self.entry_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetInterceptEntry {
+          interceptEntry(id: "#{escaped_id}") {
+            id
+            kind
+            request {
+              id
+              host
+              port
+              path
+              query
+              method
+              isTls
+              raw
+            }
+          }
+        }
+      )
+    end
+
+    # Get the offset of a specific intercept entry
+    def self.entry_offset(id : String, filter : String? = nil)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      filter_clause = CaidoUtils.build_filter_clause(filter)
+
+      %Q(
+        query GetInterceptEntryOffset {
+          interceptEntryOffset(id: "#{escaped_id}" #{filter_clause}) {
+            offset
+          }
+        }
+      )
+    end
+
+    # Get intercept messages
+    def self.messages(after : String? = nil, first : Int32 = 50, kind : String? = nil)
+      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+      kind_clause = kind ? %Q(kind: #{kind}) : ""
+
+      %Q(
+        query GetInterceptMessages {
+          interceptMessages(#{after_clause} first: #{first} #{kind_clause}) {
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+            nodes {
+              id
+              kind
+              request {
+                id
+                host
+                path
+                method
+              }
+            }
+          }
+        }
+      )
+    end
   end
 
   module Scopes
@@ -300,7 +424,7 @@ module CaidoQueries
     # Get findings with pagination
     def self.all(after : String? = nil, first : Int32 = 50)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetFindings {
           findings(#{after_clause} first: #{first}) {
@@ -359,6 +483,32 @@ module CaidoQueries
       %Q(
         query GetFindingReporters {
           findingReporters
+        }
+      )
+    end
+
+    # Get findings by offset
+    def self.by_offset(offset : Int32 = 0, limit : Int32 = 50, filter : String? = nil)
+      filter_clause = CaidoUtils.build_filter_clause(filter)
+
+      %Q(
+        query GetFindingsByOffset {
+          findingsByOffset(offset: #{offset} limit: #{limit} #{filter_clause}) {
+            nodes {
+              id
+              title
+              description
+              reporter
+              dedupeKey
+              createdAt
+              request {
+                id
+                host
+                path
+                method
+              }
+            }
+          }
         }
       )
     end
@@ -458,7 +608,7 @@ module CaidoQueries
     # Get replay sessions
     def self.sessions(after : String? = nil, first : Int32 = 50)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetReplaySessions {
           replaySessions(#{after_clause} first: #{first}) {
@@ -516,7 +666,7 @@ module CaidoQueries
     # Get replay session collections
     def self.collections(after : String? = nil, first : Int32 = 50)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetReplaySessionCollections {
           replaySessionCollections(#{after_clause} first: #{first}) {
@@ -534,13 +684,41 @@ module CaidoQueries
         }
       )
     end
+
+    # Get a single replay entry by ID
+    def self.entry_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetReplayEntry {
+          replayEntry(id: "#{escaped_id}") {
+            id
+            error
+            request {
+              id
+              host
+              port
+              path
+              method
+              raw
+            }
+            response {
+              id
+              statusCode
+              roundtripTime
+              length
+              raw
+            }
+          }
+        }
+      )
+    end
   end
 
   module Automate
     # Get automate sessions
     def self.sessions(after : String? = nil, first : Int32 = 50)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetAutomateSessions {
           automateSessions(#{after_clause} first: #{first}) {
@@ -593,7 +771,7 @@ module CaidoQueries
     # Get automate tasks
     def self.tasks(after : String? = nil, first : Int32 = 50)
       after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+
       %Q(
         query GetAutomateTasks {
           automateTasks(#{after_clause} first: #{first}) {
@@ -607,6 +785,33 @@ module CaidoQueries
               id
               paused
               createdAt
+            }
+          }
+        }
+      )
+    end
+
+    # Get a single automate entry
+    def self.entry_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetAutomateEntry {
+          automateEntry(id: "#{escaped_id}") {
+            id
+            createdAt
+            request {
+              id
+              host
+              port
+              path
+              method
+              isTls
+            }
+            response {
+              id
+              statusCode
+              roundtripTime
+              length
             }
           }
         }
@@ -801,6 +1006,27 @@ module CaidoQueries
         }
       )
     end
+
+    # Get a single tamper rule collection by ID
+    def self.collection_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetTamperRuleCollection {
+          tamperRuleCollection(id: "#{escaped_id}") {
+            id
+            name
+            rules {
+              id
+              name
+              enabled
+              rank
+              condition
+              strategy
+            }
+          }
+        }
+      )
+    end
   end
 
   module Assistant
@@ -826,6 +1052,27 @@ module CaidoQueries
             id
             name
             provider
+          }
+        }
+      )
+    end
+
+    # Get a single assistant session by ID
+    def self.session_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetAssistantSession {
+          assistantSession(id: "#{escaped_id}") {
+            id
+            name
+            modelId
+            createdAt
+            messages {
+              id
+              content
+              role
+              createdAt
+            }
           }
         }
       )
@@ -856,6 +1103,20 @@ module CaidoQueries
         }
       )
     end
+
+    # Get a single environment by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetEnvironment {
+          environment(id: "#{escaped_id}") {
+            id
+            name
+            data
+          }
+        }
+      )
+    end
   end
 
   module Plugins
@@ -870,6 +1131,410 @@ module CaidoQueries
             author
             description
             enabled
+          }
+        }
+      )
+    end
+  end
+
+  module Streams
+    # Get a single stream by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetStream {
+          stream(id: "#{escaped_id}") {
+            id
+            host
+            port
+            isTls
+            protocol
+            createdAt
+            request {
+              id
+            }
+          }
+        }
+      )
+    end
+
+    # Get all streams with cursor pagination
+    def self.all(after : String? = nil, first : Int32 = 50, protocol : String? = nil, scope_id : String? = nil)
+      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+      protocol_clause = protocol ? %Q(protocol: #{protocol}) : ""
+      scope_clause = scope_id ? %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") : ""
+
+      %Q(
+        query GetStreams {
+          streams(#{after_clause} first: #{first} #{protocol_clause} #{scope_clause}) {
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+            nodes {
+              id
+              host
+              port
+              isTls
+              protocol
+              createdAt
+            }
+          }
+        }
+      )
+    end
+
+    # Get streams by offset
+    def self.by_offset(offset : Int32 = 0, limit : Int32 = 50, protocol : String? = nil, scope_id : String? = nil)
+      protocol_clause = protocol ? %Q(protocol: #{protocol}) : ""
+      scope_clause = scope_id ? %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") : ""
+
+      %Q(
+        query GetStreamsByOffset {
+          streamsByOffset(offset: #{offset} limit: #{limit} #{protocol_clause} #{scope_clause}) {
+            nodes {
+              id
+              host
+              port
+              isTls
+              protocol
+              createdAt
+            }
+          }
+        }
+      )
+    end
+
+    # Get a single WebSocket message
+    def self.ws_message_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetStreamWsMessage {
+          streamWsMessage(id: "#{escaped_id}") {
+            id
+            length
+            direction
+            createdAt
+            streamId
+            raw
+          }
+        }
+      )
+    end
+
+    # Get WebSocket messages with cursor pagination
+    def self.ws_messages(stream_id : String, after : String? = nil, first : Int32 = 50)
+      escaped_stream_id = CaidoUtils.escape_graphql_string(stream_id)
+      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+
+      %Q(
+        query GetStreamWsMessages {
+          streamWsMessages(streamId: "#{escaped_stream_id}" #{after_clause} first: #{first}) {
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+            nodes {
+              id
+              length
+              direction
+              createdAt
+              streamId
+              raw
+            }
+          }
+        }
+      )
+    end
+
+    # Get WebSocket messages by offset
+    def self.ws_messages_by_offset(stream_id : String, offset : Int32 = 0, limit : Int32 = 50)
+      escaped_stream_id = CaidoUtils.escape_graphql_string(stream_id)
+
+      %Q(
+        query GetStreamWsMessagesByOffset {
+          streamWsMessagesByOffset(streamId: "#{escaped_stream_id}" offset: #{offset} limit: #{limit}) {
+            nodes {
+              id
+              length
+              direction
+              createdAt
+              streamId
+              raw
+            }
+          }
+        }
+      )
+    end
+
+    # Get a WebSocket message edit
+    def self.ws_message_edit_by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetStreamWsMessageEdit {
+          streamWsMessageEdit(id: "#{escaped_id}") {
+            id
+            raw
+          }
+        }
+      )
+    end
+  end
+
+  module FilterPresets
+    # Get all filter presets
+    def self.all
+      %Q(
+        query GetFilterPresets {
+          filterPresets {
+            id
+            alias
+            name
+            clause
+          }
+        }
+      )
+    end
+
+    # Get a single filter preset by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetFilterPreset {
+          filterPreset(id: "#{escaped_id}") {
+            id
+            alias
+            name
+            clause
+          }
+        }
+      )
+    end
+  end
+
+  module Backups
+    # Get all backups
+    def self.all
+      %Q(
+        query GetBackups {
+          backups {
+            id
+            name
+            path
+            size
+            status
+            createdAt
+            project {
+              id
+              name
+            }
+          }
+        }
+      )
+    end
+
+    # Get a single backup by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetBackup {
+          backup(id: "#{escaped_id}") {
+            id
+            name
+            path
+            size
+            status
+            createdAt
+            project {
+              id
+              name
+            }
+          }
+        }
+      )
+    end
+
+    # Get backup tasks
+    def self.tasks
+      %Q(
+        query GetBackupTasks {
+          backupTasks {
+            id
+            backup {
+              id
+              name
+            }
+          }
+        }
+      )
+    end
+
+    # Get restore backup tasks
+    def self.restore_tasks
+      %Q(
+        query GetRestoreBackupTasks {
+          restoreBackupTasks {
+            id
+            backup {
+              id
+              name
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module DataExports
+    # Get all data exports
+    def self.all
+      %Q(
+        query GetDataExports {
+          dataExports {
+            id
+            name
+            path
+            size
+            status
+            format
+            error
+            createdAt
+          }
+        }
+      )
+    end
+
+    # Get a single data export by ID
+    def self.by_id(id : String)
+      escaped_id = CaidoUtils.escape_graphql_string(id)
+      %Q(
+        query GetDataExport {
+          dataExport(id: "#{escaped_id}") {
+            id
+            name
+            path
+            size
+            status
+            format
+            error
+            createdAt
+          }
+        }
+      )
+    end
+  end
+
+  module HostedFiles
+    # Get all hosted files
+    def self.all
+      %Q(
+        query GetHostedFiles {
+          hostedFiles {
+            id
+            name
+            path
+            size
+            updatedAt
+            createdAt
+          }
+        }
+      )
+    end
+  end
+
+  module BrowserInfo
+    # Get browser information
+    def self.info
+      %Q(
+        query GetBrowser {
+          browser {
+            id
+            installedBrowser {
+              path
+              version
+            }
+            latestBrowser {
+              version
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module UpstreamPluginsList
+    # Get all upstream plugins
+    def self.all
+      %Q(
+        query GetUpstreamPlugins {
+          upstreamPlugins {
+            id
+            enabled
+            rank
+            pluginId
+          }
+        }
+      )
+    end
+  end
+
+  module GlobalConfigQuery
+    # Get global configuration
+    def self.get
+      %Q(
+        query GetGlobalConfig {
+          globalConfig {
+            address
+          }
+        }
+      )
+    end
+  end
+
+  module TasksQuery
+    # Get all tasks
+    def self.all
+      %Q(
+        query GetTasks {
+          tasks {
+            id
+            kind
+          }
+        }
+      )
+    end
+  end
+
+  module Store
+    # Get plugin store info
+    def self.info
+      %Q(
+        query GetStore {
+          store {
+            pluginPackages {
+              id
+              name
+              version
+              description
+              author
+            }
+          }
+        }
+      )
+    end
+  end
+
+  module AuthenticationQuery
+    # Get authentication state
+    def self.state
+      %Q(
+        query GetAuthenticationState {
+          authenticationState {
+            isAuthenticated
           }
         }
       )

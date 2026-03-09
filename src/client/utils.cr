@@ -5,12 +5,12 @@ module CaidoUtils
   # Prevents GraphQL injection attacks by escaping special characters
   def self.escape_graphql_string(value : String) : String
     value.gsub("\\", "\\\\")
-         .gsub("\"", "\\\"")
-         .gsub("\n", "\\n")
-         .gsub("\r", "\\r")
-         .gsub("\t", "\\t")
-         .gsub("\b", "\\b")
-         .gsub("\f", "\\f")
+      .gsub("\"", "\\\"")
+      .gsub("\n", "\\n")
+      .gsub("\r", "\\r")
+      .gsub("\t", "\\t")
+      .gsub("\b", "\\b")
+      .gsub("\f", "\\f")
   end
 
   # Helper to build pagination clauses
