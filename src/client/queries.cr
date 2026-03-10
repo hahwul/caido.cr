@@ -50,18 +50,30 @@ module CaidoQueries
 
   module Requests
     # Get all requests with pagination
-    def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
+    def self.all(after : String? = nil, first : Int32? = 50, filter : String? = nil, last : Int32? = nil, before : String? = nil, scope_id : String? = nil, order : String? = nil, include_request_raw : Bool = false, include_response_raw : Bool = false)
       filter_clause = CaidoUtils.build_filter_clause(filter)
-      pagination = CaidoUtils.build_pagination(after: after, first: first)
+      pagination = CaidoUtils.build_pagination(after: after, first: first, before: before, last: last)
+
+      args = [] of String
+      args << pagination unless pagination.empty?
+      args << filter_clause unless filter_clause.empty?
+      args << %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id.not_nil!)}") if scope_id
+      args << %Q(order: #{order}) if order
+
+      args_str = args.empty? ? "" : "(#{args.join(", ")})"
+      request_raw_field = include_request_raw ? "raw" : ""
+      response_raw_field = include_response_raw ? "raw" : ""
 
       %Q(
         query GetRequests {
-          requests(#{pagination} #{filter_clause}) {
+          requests#{args_str} {
             #{PAGE_INFO_FIELDS}
             nodes {
               #{REQUEST_FIELDS}
+              #{request_raw_field}
               response {
                 #{RESPONSE_FIELDS}
+                #{response_raw_field}
               }
             }
           }
@@ -70,16 +82,19 @@ module CaidoQueries
     end
 
     # Get a single request by ID
-    def self.by_id(id : String)
+    def self.by_id(id : String, include_request_raw : Bool = true, include_response_raw : Bool = true)
       escaped_id = CaidoUtils.escape_graphql_string(id)
+      request_raw_field = include_request_raw ? "raw" : ""
+      response_raw_field = include_response_raw ? "raw" : ""
+
       %Q(
         query GetRequest {
           request(id: "#{escaped_id}") {
             #{REQUEST_FIELDS}
-            raw
+            #{request_raw_field}
             response {
               #{RESPONSE_FIELDS}
-              raw
+              #{response_raw_field}
             }
           }
         }
