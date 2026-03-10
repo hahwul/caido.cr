@@ -3,22 +3,16 @@ require "./utils"
 module CaidoQueries
   # Query templates for common Caido GraphQL operations
 
-  module Requests
-    # Get all requests with pagination
-    def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
-      filter_clause = CaidoUtils.build_filter_clause(filter)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
-      %Q(
-        query GetRequests {
-          requests(#{after_clause} first: #{first} #{filter_clause}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
-            nodes {
+  # Reusable GraphQL field fragments
+  METADATA_FIELDS = <<-GQL
+              metadata {
+                id
+                color
+                label
+              }
+  GQL
+
+  REQUEST_FIELDS = <<-GQL
               id
               host
               port
@@ -29,22 +23,45 @@ module CaidoQueries
               isTls
               length
               alteration
-              metadata {
-                id
-                color
-                label
-              }
+              #{METADATA_FIELDS}
               fileExtension
               source
               createdAt
+  GQL
+
+  RESPONSE_FIELDS = <<-GQL
+              id
+              statusCode
+              roundtripTime
+              length
+              createdAt
+              alteration
+              edited
+  GQL
+
+  PAGE_INFO_FIELDS = <<-GQL
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+  GQL
+
+  module Requests
+    # Get all requests with pagination
+    def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
+      filter_clause = CaidoUtils.build_filter_clause(filter)
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
+      %Q(
+        query GetRequests {
+          requests(#{pagination} #{filter_clause}) {
+            #{PAGE_INFO_FIELDS}
+            nodes {
+              #{REQUEST_FIELDS}
               response {
-                id
-                statusCode
-                roundtripTime
-                length
-                createdAt
-                alteration
-                edited
+                #{RESPONSE_FIELDS}
               }
             }
           }
@@ -58,33 +75,10 @@ module CaidoQueries
       %Q(
         query GetRequest {
           request(id: "#{escaped_id}") {
-            id
-            host
-            port
-            path
-            query
-            method
-            edited
-            isTls
-            length
-            alteration
-            metadata {
-              id
-              color
-              label
-            }
-            fileExtension
-            source
-            createdAt
+            #{REQUEST_FIELDS}
             raw
             response {
-              id
-              statusCode
-              roundtripTime
-              length
-              createdAt
-              alteration
-              edited
+              #{RESPONSE_FIELDS}
               raw
             }
           }
@@ -95,29 +89,12 @@ module CaidoQueries
     # Get requests by offset (alternative pagination)
     def self.by_offset(offset : Int32 = 0, limit : Int32 = 50, filter : String? = nil)
       filter_clause = CaidoUtils.build_filter_clause(filter)
-      
+
       %Q(
         query GetRequestsByOffset {
           requestsByOffset(offset: #{offset} limit: #{limit} #{filter_clause}) {
             nodes {
-              id
-              host
-              port
-              path
-              query
-              method
-              edited
-              isTls
-              length
-              alteration
-              metadata {
-                id
-                color
-                label
-              }
-              fileExtension
-              source
-              createdAt
+              #{REQUEST_FIELDS}
             }
           }
         }
@@ -126,24 +103,24 @@ module CaidoQueries
   end
 
   module Sitemap
-    # Get root sitemap entries
-    def self.root_entries(scope_id : String? = nil)
-      scope_clause = scope_id ? %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") : ""
-      
-      %Q(
-        query GetSitemapRootEntries {
-          sitemapRootEntries(#{scope_clause}) {
-            nodes {
+    SITEMAP_ENTRY_FIELDS = <<-GQL
               id
               label
               kind
               parentId
               hasDescendants
-              metadata {
-                id
-                color
-                label
-              }
+              #{METADATA_FIELDS}
+    GQL
+
+    # Get root sitemap entries
+    def self.root_entries(scope_id : String? = nil)
+      scope_clause = scope_id ? %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") : ""
+
+      %Q(
+        query GetSitemapRootEntries {
+          sitemapRootEntries(#{scope_clause}) {
+            nodes {
+              #{SITEMAP_ENTRY_FIELDS}
             }
           }
         }
@@ -157,16 +134,7 @@ module CaidoQueries
         query GetSitemapDescendantEntries {
           sitemapDescendantEntries(parentId: "#{escaped_parent_id}", depth: #{depth}) {
             nodes {
-              id
-              label
-              kind
-              parentId
-              hasDescendants
-              metadata {
-                id
-                color
-                label
-              }
+              #{SITEMAP_ENTRY_FIELDS}
             }
           }
         }
@@ -179,16 +147,7 @@ module CaidoQueries
       %Q(
         query GetSitemapEntry {
           sitemapEntry(id: "#{escaped_id}") {
-            id
-            label
-            kind
-            parentId
-            hasDescendants
-            metadata {
-              id
-              color
-              label
-            }
+            #{SITEMAP_ENTRY_FIELDS}
           }
         }
       )
@@ -199,17 +158,12 @@ module CaidoQueries
     # Get intercept entries
     def self.entries(after : String? = nil, first : Int32 = 50, filter : String? = nil)
       filter_clause = CaidoUtils.build_filter_clause(filter)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
       %Q(
         query GetInterceptEntries {
-          interceptEntries(#{after_clause} first: #{first} #{filter_clause}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          interceptEntries(#{pagination} #{filter_clause}) {
+            #{PAGE_INFO_FIELDS}
             nodes {
               id
               kind
@@ -301,18 +255,13 @@ module CaidoQueries
   module Findings
     # Get findings with pagination
     def self.all(after : String? = nil, first : Int32 = 50, filter : String? = nil)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
       filter_clause = filter ? %Q(filter: { reporter: "#{CaidoUtils.escape_graphql_string(filter)}" }) : ""
 
       %Q(
         query GetFindings {
-          findings(#{after_clause} first: #{first} #{filter_clause}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          findings(#{pagination} #{filter_clause}) {
+            #{PAGE_INFO_FIELDS}
             edges {
               cursor
               node {
@@ -475,17 +424,12 @@ module CaidoQueries
   module Replay
     # Get replay sessions
     def self.sessions(after : String? = nil, first : Int32 = 50)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
       %Q(
         query GetReplaySessions {
-          replaySessions(#{after_clause} first: #{first}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          replaySessions(#{pagination}) {
+            #{PAGE_INFO_FIELDS}
             nodes {
               id
               name
@@ -576,18 +520,13 @@ module CaidoQueries
     # Get entries for a replay session
     def self.session_entries(session_id : String, after : String? = nil, first : Int32 = 50)
       escaped_id = CaidoUtils.escape_graphql_string(session_id)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
 
       %Q(
         query GetReplaySessionEntries {
           replaySession(id: "#{escaped_id}") {
-            entries(#{after_clause} first: #{first}) {
-              pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-              }
+            entries(#{pagination}) {
+              #{PAGE_INFO_FIELDS}
               edges {
                 cursor
                 node {
@@ -622,17 +561,12 @@ module CaidoQueries
 
     # Get replay session collections
     def self.collections(after : String? = nil, first : Int32 = 50)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
       %Q(
         query GetReplaySessionCollections {
-          replaySessionCollections(#{after_clause} first: #{first}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          replaySessionCollections(#{pagination}) {
+            #{PAGE_INFO_FIELDS}
             nodes {
               id
               name
@@ -646,17 +580,12 @@ module CaidoQueries
   module Automate
     # Get automate sessions
     def self.sessions(after : String? = nil, first : Int32 = 50)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
       %Q(
         query GetAutomateSessions {
-          automateSessions(#{after_clause} first: #{first}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          automateSessions(#{pagination}) {
+            #{PAGE_INFO_FIELDS}
             nodes {
               id
               name
@@ -699,17 +628,12 @@ module CaidoQueries
 
     # Get automate tasks
     def self.tasks(after : String? = nil, first : Int32 = 50)
-      after_clause = after ? %Q(after: "#{CaidoUtils.escape_graphql_string(after)}") : ""
-      
+      pagination = CaidoUtils.build_pagination(after: after, first: first)
+
       %Q(
         query GetAutomateTasks {
-          automateTasks(#{after_clause} first: #{first}) {
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
+          automateTasks(#{pagination}) {
+            #{PAGE_INFO_FIELDS}
             nodes {
               id
               paused

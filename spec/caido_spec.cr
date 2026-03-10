@@ -61,7 +61,7 @@ describe CaidoUtils do
     end
 
     it "escapes special characters in filter" do
-      CaidoUtils.build_filter_clause(%q(path:"test")).should eq(%Q(filter: "path:\\\"test\\\""))
+      CaidoUtils.build_filter_clause(%q(path:"test")).should eq(%Q(filter: "path:\\"test\\""))
     end
   end
 
@@ -117,7 +117,7 @@ describe CaidoQueries::Requests do
 
     it "escapes filter value" do
       query = CaidoQueries::Requests.all(filter: %q(path:"test"))
-      query.should contain(%Q(filter: "path:\\\"test\\\""))
+      query.should contain(%Q(filter: "path:\\"test\\""))
     end
   end
 
