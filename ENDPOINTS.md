@@ -287,11 +287,10 @@ response = client.query query
 Modify request metadata and properties.
 
 ```crystal
-# Update request metadata (color, label)
+# Update request metadata (color)
 mutation = CaidoMutations::Requests.update_metadata(
   request_id: "request-id",
-  color: "#FF0000",
-  label: "Important"
+  color: "#FF0000"
 )
 response = client.query mutation
 

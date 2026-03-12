@@ -8,7 +8,6 @@ module CaidoQueries
               metadata {
                 id
                 color
-                label
               }
   GQL
 
