@@ -4,12 +4,11 @@ module CaidoMutations
   # Mutation templates for common Caido GraphQL operations
 
   module Requests
-    # Update request metadata (color, label)
-    def self.update_metadata(request_id : String, color : String? = nil, label : String? = nil)
+    # Update request metadata (color)
+    def self.update_metadata(request_id : String, color : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(request_id)
       metadata_parts = [] of String
       metadata_parts << %Q(color: "#{CaidoUtils.escape_graphql_string(color.not_nil!)}") if color
-      metadata_parts << %Q(label: "#{CaidoUtils.escape_graphql_string(label.not_nil!)}") if label
       metadata_input = metadata_parts.join(", ")
 
       %Q(
@@ -20,7 +19,6 @@ module CaidoMutations
               metadata {
                 id
                 color
-                label
               }
             }
           }
