@@ -490,15 +490,19 @@ module CaidoQueries
     end
 
     # Get a single replay entry by ID
-    def self.entry_by_id(id : String)
+    def self.entry_by_id(id : String, include_replay_raw : Bool = true, include_request_raw : Bool = true, include_response_raw : Bool = true)
       escaped_id = CaidoUtils.escape_graphql_string(id)
+      replay_raw_field = include_replay_raw ? "raw" : ""
+      request_raw_field = include_request_raw ? "raw" : ""
+      response_raw_field = include_response_raw ? "raw" : ""
+
       %Q(
         query GetReplayEntry {
           replayEntry(id: "#{escaped_id}") {
             id
             createdAt
             error
-            raw
+            #{replay_raw_field}
             connection {
               host
               port
@@ -513,18 +517,22 @@ module CaidoQueries
               query
               isTls
               createdAt
-              raw
+              #{request_raw_field}
               response {
                 id
                 statusCode
                 roundtripTime
                 length
                 createdAt
-                raw
+                #{response_raw_field}
               }
             }
             session {
               id
+            }
+            settings {
+              connectionClose
+              updateContentLength
             }
           }
         }
@@ -532,9 +540,12 @@ module CaidoQueries
     end
 
     # Get entries for a replay session
-    def self.session_entries(session_id : String, after : String? = nil, first : Int32 = 50)
+    def self.session_entries(session_id : String, after : String? = nil, first : Int32 = 50, include_replay_raw : Bool = false, include_request_raw : Bool = false, include_response_raw : Bool = false)
       escaped_id = CaidoUtils.escape_graphql_string(session_id)
       pagination = CaidoUtils.build_pagination(after: after, first: first)
+      replay_raw_field = include_replay_raw ? "raw" : ""
+      request_raw_field = include_request_raw ? "raw" : ""
+      response_raw_field = include_response_raw ? "raw" : ""
 
       %Q(
         query GetReplaySessionEntries {
@@ -547,6 +558,7 @@ module CaidoQueries
                   id
                   createdAt
                   error
+                  #{replay_raw_field}
                   connection {
                     host
                     port
@@ -561,9 +573,22 @@ module CaidoQueries
                     query
                     isTls
                     createdAt
+                    #{request_raw_field}
+                    response {
+                      id
+                      statusCode
+                      roundtripTime
+                      length
+                      createdAt
+                      #{response_raw_field}
+                    }
                   }
                   session {
                     id
+                  }
+                  settings {
+                    connectionClose
+                    updateContentLength
                   }
                 }
               }
