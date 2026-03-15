@@ -536,18 +536,28 @@ module CaidoMutations
 
   module Replay
     # Create a replay session
-    def self.create_session(name : String, source : String, collection_id : String? = nil)
+    def self.create_session(name : String, request_id : String? = nil, connection_info : NamedTuple(host: String, port: Int32, is_tls: Bool, sni: String?)? = nil, raw : String? = nil, collection_id : String? = nil)
       escaped_name = CaidoUtils.escape_graphql_string(name)
-      escaped_source = CaidoUtils.escape_graphql_string(source)
       collection_clause = collection_id ? %Q(collectionId: "#{CaidoUtils.escape_graphql_string(collection_id)}") : ""
+
+      request_source = if request_id
+                         %Q(requestSource: { id: "#{CaidoUtils.escape_graphql_string(request_id)}" })
+                       elsif connection_info && raw
+                         sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].not_nil!)}") : ""
+                         conn = %Q({ host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
+                         %Q(requestSource: { raw: { connectionInfo: #{conn}, raw: "#{CaidoUtils.escape_graphql_string(raw)}" } })
+                       else
+                         ""
+                       end
 
       %Q(
         mutation CreateReplaySession {
           createReplaySession(input: {
             name: "#{escaped_name}",
-            source: "#{escaped_source}",
+            #{request_source}
             #{collection_clause}
           }) {
+
             session {
               id
               name
@@ -671,11 +681,28 @@ module CaidoMutations
     end
 
     # Start a replay task
-    def self.start_task(session_id : String)
+    def self.start_task(session_id : String, connection_info : NamedTuple(host: String, port: Int32, is_tls: Bool, sni: String?)? = nil, raw : String? = nil, settings : NamedTuple(connection_close: Bool, update_content_length: Bool)? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(session_id)
+
+      input_parts = [] of String
+      if connection_info && raw
+        sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].not_nil!)}") : ""
+        conn = %Q(connection: { host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
+        input_parts << conn
+        input_parts << %Q(raw: "#{CaidoUtils.escape_graphql_string(raw)}")
+      end
+
+      if settings
+        sets = %Q(settings: { connectionClose: #{settings[:connection_close]}, updateContentLength: #{settings[:update_content_length]}, placeholders: [] })
+        input_parts << sets
+      end
+
+      input_str = input_parts.empty? ? "{}" : "{ #{input_parts.join(", ")} }"
+
       %Q(
         mutation StartReplayTask {
-          startReplayTask(sessionId: "#{escaped_id}", input: {}) {
+          startReplayTask(sessionId: "#{escaped_id}", input: #{input_str}) {
+
             task {
               id
             }
