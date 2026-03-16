@@ -854,8 +854,8 @@ module CaidoMutations
     end
   end
 
-  module Tamper
-    # Create a tamper rule
+  module MatchReplace
+    # Create a matchReplace rule
     def self.create_rule(name : String, condition : String, strategy : String, collection_id : String? = nil)
       escaped_name = CaidoUtils.escape_graphql_string(name)
       escaped_condition = CaidoUtils.escape_graphql_string(condition)
@@ -863,8 +863,8 @@ module CaidoMutations
       collection_clause = collection_id ? %Q(collectionId: "#{CaidoUtils.escape_graphql_string(collection_id)}") : ""
 
       %Q(
-        mutation CreateTamperRule {
-          createTamperRule(input: {
+        mutation CreateMatchReplaceRule {
+          createMatchReplaceRule(input: {
             name: "#{escaped_name}",
             condition: "#{escaped_condition}",
             strategy: "#{escaped_strategy}",
@@ -882,12 +882,12 @@ module CaidoMutations
       )
     end
 
-    # Create a tamper rule collection
+    # Create a matchReplace rule collection
     def self.create_collection(name : String)
       escaped_name = CaidoUtils.escape_graphql_string(name)
       %Q(
-        mutation CreateTamperRuleCollection {
-          createTamperRuleCollection(input: { name: "#{escaped_name}" }) {
+        mutation CreateMatchReplaceRuleCollection {
+          createMatchReplaceRuleCollection(input: { name: "#{escaped_name}" }) {
             collection {
               id
               name
@@ -897,7 +897,7 @@ module CaidoMutations
       )
     end
 
-    # Update a tamper rule
+    # Update a matchReplace rule
     def self.update_rule(rule_id : String, name : String? = nil, condition : String? = nil, strategy : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(rule_id)
       updates = [] of String
@@ -906,8 +906,8 @@ module CaidoMutations
       updates << %Q(strategy: "#{CaidoUtils.escape_graphql_string(strategy.not_nil!)}") if strategy
 
       %Q(
-        mutation UpdateTamperRule {
-          updateTamperRule(id: "#{escaped_id}", input: { #{updates.join(", ")} }) {
+        mutation UpdateMatchReplaceRule {
+          updateMatchReplaceRule(id: "#{escaped_id}", input: { #{updates.join(", ")} }) {
             rule {
               id
               name
@@ -919,36 +919,36 @@ module CaidoMutations
       )
     end
 
-    # Delete a tamper rule
+    # Delete a matchReplace rule
     def self.delete_rule(rule_id : String)
       escaped_id = CaidoUtils.escape_graphql_string(rule_id)
       %Q(
-        mutation DeleteTamperRule {
-          deleteTamperRule(id: "#{escaped_id}") {
+        mutation DeleteMatchReplaceRule {
+          deleteMatchReplaceRule(id: "#{escaped_id}") {
             deletedId
           }
         }
       )
     end
 
-    # Delete a tamper rule collection
+    # Delete a matchReplace rule collection
     def self.delete_collection(collection_id : String)
       escaped_id = CaidoUtils.escape_graphql_string(collection_id)
       %Q(
-        mutation DeleteTamperRuleCollection {
-          deleteTamperRuleCollection(id: "#{escaped_id}") {
+        mutation DeleteMatchReplaceRuleCollection {
+          deleteMatchReplaceRuleCollection(id: "#{escaped_id}") {
             deletedId
           }
         }
       )
     end
 
-    # Toggle tamper rule enabled state
+    # Toggle matchReplace rule enabled state
     def self.toggle_rule(rule_id : String, enabled : Bool)
       escaped_id = CaidoUtils.escape_graphql_string(rule_id)
       %Q(
-        mutation ToggleTamperRule {
-          toggleTamperRule(id: "#{escaped_id}", enabled: #{enabled}) {
+        mutation ToggleMatchReplaceRule {
+          toggleMatchReplaceRule(id: "#{escaped_id}", enabled: #{enabled}) {
             rule {
               id
               enabled
@@ -958,13 +958,13 @@ module CaidoMutations
       )
     end
 
-    # Rename a tamper rule
+    # Rename a matchReplace rule
     def self.rename_rule(rule_id : String, name : String)
       escaped_id = CaidoUtils.escape_graphql_string(rule_id)
       escaped_name = CaidoUtils.escape_graphql_string(name)
       %Q(
-        mutation RenameTamperRule {
-          renameTamperRule(id: "#{escaped_id}", name: "#{escaped_name}") {
+        mutation RenameMatchReplaceRule {
+          renameMatchReplaceRule(id: "#{escaped_id}", name: "#{escaped_name}") {
             rule {
               id
               name
@@ -974,13 +974,13 @@ module CaidoMutations
       )
     end
 
-    # Rename a tamper rule collection
+    # Rename a matchReplace rule collection
     def self.rename_collection(collection_id : String, name : String)
       escaped_id = CaidoUtils.escape_graphql_string(collection_id)
       escaped_name = CaidoUtils.escape_graphql_string(name)
       %Q(
-        mutation RenameTamperRuleCollection {
-          renameTamperRuleCollection(id: "#{escaped_id}", name: "#{escaped_name}") {
+        mutation RenameMatchReplaceRuleCollection {
+          renameMatchReplaceRuleCollection(id: "#{escaped_id}", name: "#{escaped_name}") {
             collection {
               id
               name
@@ -990,13 +990,13 @@ module CaidoMutations
       )
     end
 
-    # Move a tamper rule to a collection
+    # Move a matchReplace rule to a collection
     def self.move_rule(rule_id : String, collection_id : String)
       escaped_rule_id = CaidoUtils.escape_graphql_string(rule_id)
       escaped_collection_id = CaidoUtils.escape_graphql_string(collection_id)
       %Q(
-        mutation MoveTamperRule {
-          moveTamperRule(id: "#{escaped_rule_id}", collectionId: "#{escaped_collection_id}") {
+        mutation MoveMatchReplaceRule {
+          moveMatchReplaceRule(id: "#{escaped_rule_id}", collectionId: "#{escaped_collection_id}") {
             rule {
               id
               collection {

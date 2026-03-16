@@ -850,12 +850,12 @@ module CaidoQueries
     end
   end
 
-  module Tamper
-    # Get all tamper rules
+  module MatchReplace
+    # Get all matchReplace rules
     def self.rules
       %Q(
-        query GetTamperRules {
-          tamperRuleCollections {
+        query GetMatchReplaceRules {
+          matchReplaceRuleCollections {
             id
             name
             rules {
@@ -871,12 +871,12 @@ module CaidoQueries
       )
     end
 
-    # Get a single tamper rule
+    # Get a single matchReplace rule
     def self.rule_by_id(id : String)
       escaped_id = CaidoUtils.escape_graphql_string(id)
       %Q(
-        query GetTamperRule {
-          tamperRule(id: "#{escaped_id}") {
+        query GetMatchReplaceRule {
+          matchReplaceRule(id: "#{escaped_id}") {
             id
             name
             enabled
