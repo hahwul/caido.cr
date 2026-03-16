@@ -276,7 +276,7 @@ response = client.query query
 - **InstanceSettings**: Get instance settings (AI providers, analytics, onboarding)
 - **DNS**: Manage DNS rewrites and upstreams
 - **UpstreamProxies**: Manage HTTP and SOCKS upstream proxies
-- **Tamper**: Manage request/response tampering rules
+- **MatchReplace**: Manage request/response tampering rules
 - **Assistant**: AI assistant sessions (requires cloud)
 - **Plugins**: Manage installed plugins
 
@@ -523,13 +523,13 @@ mutation = CaidoMutations::Automate.cancel_task(task_id: "task-id")
 response = client.query mutation
 ```
 
-### Tamper Mutations
+### MatchReplace Mutations
 
 Manage request/response tampering rules.
 
 ```crystal
-# Create a tamper rule
-mutation = CaidoMutations::Tamper.create_rule(
+# Create a matchReplace rule
+mutation = CaidoMutations::MatchReplace.create_rule(
   name: "Add Header",
   condition: "request.host == 'example.com'",
   strategy: "add-header-strategy",
@@ -537,24 +537,24 @@ mutation = CaidoMutations::Tamper.create_rule(
 )
 response = client.query mutation
 
-# Create a tamper rule collection
-mutation = CaidoMutations::Tamper.create_collection(name: "My Rules")
+# Create a matchReplace rule collection
+mutation = CaidoMutations::MatchReplace.create_collection(name: "My Rules")
 response = client.query mutation
 
-# Toggle tamper rule enabled state
-mutation = CaidoMutations::Tamper.toggle_rule(rule_id: "rule-id", enabled: true)
+# Toggle matchReplace rule enabled state
+mutation = CaidoMutations::MatchReplace.toggle_rule(rule_id: "rule-id", enabled: true)
 response = client.query mutation
 
-# Update a tamper rule
-mutation = CaidoMutations::Tamper.update_rule(
+# Update a matchReplace rule
+mutation = CaidoMutations::MatchReplace.update_rule(
   rule_id: "rule-id",
   name: "Updated Rule",
   condition: "new-condition"
 )
 response = client.query mutation
 
-# Delete a tamper rule
-mutation = CaidoMutations::Tamper.delete_rule(rule_id: "rule-id")
+# Delete a matchReplace rule
+mutation = CaidoMutations::MatchReplace.delete_rule(rule_id: "rule-id")
 response = client.query mutation
 ```
 

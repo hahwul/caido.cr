@@ -90,7 +90,7 @@ The library includes helper modules for common operations:
 - **Workflows**: Create, update, run workflows
 - **Replay**: Manage replay sessions
 - **Automate**: Manage automate sessions and tasks
-- **Tamper**: Manage tampering rules
+- **MatchReplace**: Manage tampering rules
 - And many more...
 
 For complete documentation of all available endpoints, see [ENDPOINTS.md](ENDPOINTS.md).
