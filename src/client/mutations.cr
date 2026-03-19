@@ -268,18 +268,19 @@ module CaidoMutations
 
   module Findings
     # Create a finding
-    def self.create(request_id : String, title : String, description : String? = nil, reporter : String = "Manual")
+    def self.create(request_id : String, title : String, description : String? = nil, reporter : String = "Manual", dedupe_key : String? = nil)
       escaped_request_id = CaidoUtils.escape_graphql_string(request_id)
       escaped_title = CaidoUtils.escape_graphql_string(title)
       escaped_reporter = CaidoUtils.escape_graphql_string(reporter)
       desc_clause = description ? %Q(description: "#{CaidoUtils.escape_graphql_string(description)}") : ""
+      dedupe_clause = dedupe_key ? %Q(, dedupeKey: "#{CaidoUtils.escape_graphql_string(dedupe_key)}") : ""
 
       %Q(
         mutation CreateFinding {
           createFinding(requestId: "#{escaped_request_id}", input: {
             title: "#{escaped_title}",
             #{desc_clause}
-            reporter: "#{escaped_reporter}"
+            reporter: "#{escaped_reporter}"#{dedupe_clause}
           }) {
             finding {
               id
@@ -293,11 +294,12 @@ module CaidoMutations
     end
 
     # Update a finding
-    def self.update(finding_id : String, title : String? = nil, description : String? = nil)
+    def self.update(finding_id : String, title : String? = nil, description : String? = nil, hidden : Bool? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(finding_id)
       updates = [] of String
       updates << %Q(title: "#{CaidoUtils.escape_graphql_string(title.not_nil!)}") if title
       updates << %Q(description: "#{CaidoUtils.escape_graphql_string(description.not_nil!)}") if description
+      updates << %Q(hidden: #{hidden}) unless hidden.nil?
 
       %Q(
         mutation UpdateFinding {
@@ -386,13 +388,13 @@ module CaidoMutations
     end
 
     # Create a project (requires cloud)
-    def self.create(name : String, path : String? = nil)
+    def self.create(name : String, path : String? = nil, temporary : Bool = false)
       escaped_name = CaidoUtils.escape_graphql_string(name)
-      path_clause = path ? %Q(path: "#{CaidoUtils.escape_graphql_string(path)}") : ""
+      path_clause = path ? %Q(, path: "#{CaidoUtils.escape_graphql_string(path)}") : ""
 
       %Q(
         mutation CreateProject {
-          createProject(input: { name: "#{escaped_name}", #{path_clause} }) {
+          createProject(input: { name: "#{escaped_name}", temporary: #{temporary}#{path_clause} }) {
             project {
               id
               name
@@ -434,7 +436,7 @@ module CaidoMutations
 
   module Workflows
     # Create a workflow (requires cloud)
-    def self.create(name : String, kind : String, definition : String)
+    def self.create(name : String, kind : String, definition : String, global : Bool = false)
       escaped_name = CaidoUtils.escape_graphql_string(name)
       escaped_definition = CaidoUtils.escape_graphql_string(definition)
       %Q(
@@ -442,7 +444,8 @@ module CaidoMutations
           createWorkflow(input: {
             name: "#{escaped_name}",
             kind: #{kind},
-            definition: "#{escaped_definition}"
+            definition: "#{escaped_definition}",
+            global: #{global}
           }) {
             workflow {
               id
@@ -1602,11 +1605,11 @@ module CaidoMutations
 
   module Plugins
     # Install a plugin package
-    def self.install(manifest_id : String)
+    def self.install(manifest_id : String, force : Bool = false)
       escaped_id = CaidoUtils.escape_graphql_string(manifest_id)
       %Q(
         mutation InstallPluginPackage {
-          installPluginPackage(input: { manifestId: "#{escaped_id}" }) {
+          installPluginPackage(input: { source: { manifestId: "#{escaped_id}" }, force: #{force} }) {
             package {
               id
               manifestId
