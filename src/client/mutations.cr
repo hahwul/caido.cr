@@ -8,7 +8,7 @@ module CaidoMutations
     def self.update_metadata(request_id : String, color : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(request_id)
       metadata_parts = [] of String
-      metadata_parts << %Q(color: "#{CaidoUtils.escape_graphql_string(color.not_nil!)}") if color
+      metadata_parts << %Q(color: "#{CaidoUtils.escape_graphql_string(color)}") if color
       metadata_input = metadata_parts.join(", ")
 
       %Q(
@@ -111,8 +111,8 @@ module CaidoMutations
     def self.forward_message(message_id : String, request : String? = nil, response : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(message_id)
       input_parts = [] of String
-      input_parts << %Q(request: "#{CaidoUtils.escape_graphql_string(request.not_nil!)}") if request
-      input_parts << %Q(response: "#{CaidoUtils.escape_graphql_string(response.not_nil!)}") if response
+      input_parts << %Q(request: "#{CaidoUtils.escape_graphql_string(request)}") if request
+      input_parts << %Q(response: "#{CaidoUtils.escape_graphql_string(response)}") if response
       input_str = input_parts.empty? ? "" : ", input: { #{input_parts.join(", ")} }"
 
       %Q(
@@ -211,7 +211,7 @@ module CaidoMutations
     def self.update(scope_id : String, name : String? = nil, allowlist : Array(String)? = nil, denylist : Array(String)? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(scope_id)
       updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
+      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name)}") if name
 
       if allowlist
         allowlist_str = CaidoUtils.build_string_array(allowlist)
@@ -272,15 +272,17 @@ module CaidoMutations
       escaped_request_id = CaidoUtils.escape_graphql_string(request_id)
       escaped_title = CaidoUtils.escape_graphql_string(title)
       escaped_reporter = CaidoUtils.escape_graphql_string(reporter)
-      desc_clause = description ? %Q(description: "#{CaidoUtils.escape_graphql_string(description)}") : ""
-      dedupe_clause = dedupe_key ? %Q(, dedupeKey: "#{CaidoUtils.escape_graphql_string(dedupe_key)}") : ""
+
+      input_parts = [] of String
+      input_parts << %Q(title: "#{escaped_title}")
+      input_parts << %Q(description: "#{CaidoUtils.escape_graphql_string(description)}") if description
+      input_parts << %Q(reporter: "#{escaped_reporter}")
+      input_parts << %Q(dedupeKey: "#{CaidoUtils.escape_graphql_string(dedupe_key)}") if dedupe_key
 
       %Q(
         mutation CreateFinding {
           createFinding(requestId: "#{escaped_request_id}", input: {
-            title: "#{escaped_title}",
-            #{desc_clause}
-            reporter: "#{escaped_reporter}"#{dedupe_clause}
+            #{input_parts.join(",\n            ")}
           }) {
             finding {
               id
@@ -297,8 +299,8 @@ module CaidoMutations
     def self.update(finding_id : String, title : String? = nil, description : String? = nil, hidden : Bool? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(finding_id)
       updates = [] of String
-      updates << %Q(title: "#{CaidoUtils.escape_graphql_string(title.not_nil!)}") if title
-      updates << %Q(description: "#{CaidoUtils.escape_graphql_string(description.not_nil!)}") if description
+      updates << %Q(title: "#{CaidoUtils.escape_graphql_string(title)}") if title
+      updates << %Q(description: "#{CaidoUtils.escape_graphql_string(description)}") if description
       updates << %Q(hidden: #{hidden}) unless hidden.nil?
 
       %Q(
@@ -461,9 +463,7 @@ module CaidoMutations
     # Update a workflow
     def self.update(workflow_id : String, name : String? = nil, definition : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(workflow_id)
-      updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
-      updates << %Q(definition: "#{CaidoUtils.escape_graphql_string(definition.not_nil!)}") if definition
+      updates = CaidoUtils.build_optional_fields([{"name", name}, {"definition", definition}])
 
       %Q(
         mutation UpdateWorkflow {
@@ -546,7 +546,7 @@ module CaidoMutations
       request_source = if request_id
                          %Q(requestSource: { id: "#{CaidoUtils.escape_graphql_string(request_id)}" })
                        elsif connection_info && raw
-                         sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].not_nil!)}") : ""
+                         sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].as(String))}") : ""
                          conn = %Q({ host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
                          %Q(requestSource: { raw: { connectionInfo: #{conn}, raw: "#{CaidoUtils.escape_graphql_string(raw)}" } })
                        else
@@ -560,7 +560,6 @@ module CaidoMutations
             #{request_source}
             #{collection_clause}
           }) {
-
             session {
               id
               name
@@ -689,7 +688,7 @@ module CaidoMutations
 
       input_parts = [] of String
       if connection_info && raw
-        sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].not_nil!)}") : ""
+        sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].as(String))}") : ""
         conn = %Q(connection: { host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
         input_parts << conn
         input_parts << %Q(raw: "#{CaidoUtils.escape_graphql_string(raw)}")
@@ -705,7 +704,6 @@ module CaidoMutations
       %Q(
         mutation StartReplayTask {
           startReplayTask(sessionId: "#{escaped_id}", input: #{input_str}) {
-
             task {
               id
             }
@@ -903,10 +901,7 @@ module CaidoMutations
     # Update a matchReplace rule
     def self.update_rule(rule_id : String, name : String? = nil, condition : String? = nil, strategy : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(rule_id)
-      updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
-      updates << %Q(condition: "#{CaidoUtils.escape_graphql_string(condition.not_nil!)}") if condition
-      updates << %Q(strategy: "#{CaidoUtils.escape_graphql_string(strategy.not_nil!)}") if strategy
+      updates = CaidoUtils.build_optional_fields([{"name", name}, {"condition", condition}, {"strategy", strategy}])
 
       %Q(
         mutation UpdateMatchReplaceRule {
@@ -1044,10 +1039,10 @@ module CaidoMutations
     def self.update_rewrite(rewrite_id : String, name : String? = nil, strategy : String? = nil, source : String? = nil, destination : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(rewrite_id)
       updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
+      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name)}") if name
       updates << %Q(strategy: #{strategy}) if strategy
-      updates << %Q(source: "#{CaidoUtils.escape_graphql_string(source.not_nil!)}") if source
-      updates << %Q(destination: "#{CaidoUtils.escape_graphql_string(destination.not_nil!)}") if destination
+      updates << %Q(source: "#{CaidoUtils.escape_graphql_string(source)}") if source
+      updates << %Q(destination: "#{CaidoUtils.escape_graphql_string(destination)}") if destination
 
       %Q(
         mutation UpdateDNSRewrite {
@@ -1117,9 +1112,9 @@ module CaidoMutations
     def self.update_upstream(upstream_id : String, name : String? = nil, kind : String? = nil, address : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(upstream_id)
       updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
+      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name)}") if name
       updates << %Q(kind: #{kind}) if kind
-      updates << %Q(address: "#{CaidoUtils.escape_graphql_string(address.not_nil!)}") if address
+      updates << %Q(address: "#{CaidoUtils.escape_graphql_string(address)}") if address
 
       %Q(
         mutation UpdateDNSUpstream {
@@ -1394,9 +1389,7 @@ module CaidoMutations
     # Update an environment
     def self.update(environment_id : String, name : String? = nil, version : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(environment_id)
-      updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
-      updates << %Q(version: "#{CaidoUtils.escape_graphql_string(version.not_nil!)}") if version
+      updates = CaidoUtils.build_optional_fields([{"name", name}, {"version", version}])
 
       %Q(
         mutation UpdateEnvironment {
@@ -1478,10 +1471,7 @@ module CaidoMutations
     # Update a filter preset
     def self.update(filter_id : String, name : String? = nil, clause : String? = nil, filter_alias : String? = nil)
       escaped_id = CaidoUtils.escape_graphql_string(filter_id)
-      updates = [] of String
-      updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name.not_nil!)}") if name
-      updates << %Q(clause: "#{CaidoUtils.escape_graphql_string(clause.not_nil!)}") if clause
-      updates << %Q(alias: "#{CaidoUtils.escape_graphql_string(filter_alias.not_nil!)}") if filter_alias
+      updates = CaidoUtils.build_optional_fields([{"name", name}, {"clause", clause}, {"alias", filter_alias}])
 
       %Q(
         mutation UpdateFilterPreset {
