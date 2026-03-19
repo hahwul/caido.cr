@@ -363,8 +363,7 @@ module CaidoMutations
           exportFindings(input: { #{ids_clause} }) {
             export {
               id
-              name
-              path
+              downloadUri
             }
           }
         }
@@ -379,10 +378,12 @@ module CaidoMutations
       %Q(
         mutation SelectProject {
           selectProject(id: "#{escaped_id}") {
-            project {
-              id
-              name
-              path
+            currentProject {
+              project {
+                id
+                name
+                path
+              }
             }
           }
         }
