@@ -83,6 +83,26 @@ describe CaidoUtils do
     end
   end
 
+  describe ".build_optional_fields" do
+    it "returns empty array when all values are nil" do
+      fields = [{"name", nil}, {"desc", nil}] of Tuple(String, String?)
+      CaidoUtils.build_optional_fields(fields).should eq([] of String)
+    end
+
+    it "builds fields for non-nil values only" do
+      fields = [{"name", "test"}, {"desc", nil}] of Tuple(String, String?)
+      result = CaidoUtils.build_optional_fields(fields)
+      result.size.should eq(1)
+      result[0].should eq(%Q(name: "test"))
+    end
+
+    it "escapes special characters in values" do
+      fields = [{"name", %q(test"value)}] of Tuple(String, String?)
+      result = CaidoUtils.build_optional_fields(fields)
+      result[0].should eq(%Q(name: "test\\"value"))
+    end
+  end
+
   describe ".build_pagination" do
     it "returns empty string when no pagination" do
       CaidoUtils.build_pagination.should eq("")

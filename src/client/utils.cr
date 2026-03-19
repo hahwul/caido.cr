@@ -16,11 +16,20 @@ module CaidoUtils
   # Helper to build pagination clauses
   def self.build_pagination(after : String? = nil, first : Int32? = nil, before : String? = nil, last : Int32? = nil) : String
     clauses = [] of String
-    clauses << %Q(after: "#{escape_graphql_string(after.not_nil!)}") if after
+    clauses << %Q(after: "#{escape_graphql_string(after)}") if after
     clauses << "first: #{first}" if first
-    clauses << %Q(before: "#{escape_graphql_string(before.not_nil!)}") if before
+    clauses << %Q(before: "#{escape_graphql_string(before)}") if before
     clauses << "last: #{last}" if last
     clauses.join(" ")
+  end
+
+  # Helper to build optional update fields for mutations
+  def self.build_optional_fields(fields : Array(Tuple(String, String?))) : Array(String)
+    parts = [] of String
+    fields.each do |key, value|
+      parts << %Q(#{key}: "#{escape_graphql_string(value)}") if value
+    end
+    parts
   end
 
   # Helper to build filter clause

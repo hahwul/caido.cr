@@ -56,7 +56,7 @@ module CaidoQueries
       args = [] of String
       args << pagination unless pagination.empty?
       args << filter_clause unless filter_clause.empty?
-      args << %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id.not_nil!)}") if scope_id
+      args << %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") if scope_id
       args << %Q(order: #{order}) if order
 
       args_str = args.empty? ? "" : "(#{args.join(", ")})"
