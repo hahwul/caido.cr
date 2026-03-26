@@ -120,6 +120,38 @@ describe CaidoUtils do
       CaidoUtils.build_pagination(after: "cursor123", first: 50).should eq(%Q(after: "cursor123" first: 50))
     end
   end
+
+  describe ".build_optional_string" do
+    it "returns nil for nil value" do
+      CaidoUtils.build_optional_string("name", nil).should be_nil
+    end
+
+    it "builds key-value string for non-nil value" do
+      CaidoUtils.build_optional_string("name", "test").should eq(%Q(name: "test"))
+    end
+
+    it "escapes special characters in value" do
+      CaidoUtils.build_optional_string("name", %q(test"value)).should eq(%Q(name: "test\\"value"))
+    end
+  end
+
+  describe ".escape_graphql_string" do
+    it "escapes unicode control characters" do
+      # U+0000 (NUL)
+      CaidoUtils.escape_graphql_string("\u0000").should eq("\\u0000")
+    end
+
+    it "escapes other control characters as unicode" do
+      # U+0001 (SOH)
+      CaidoUtils.escape_graphql_string("\u0001").should eq("\\u0001")
+      # U+001F (US) - last control char before space
+      CaidoUtils.escape_graphql_string("\u001f").should eq("\\u001f")
+    end
+
+    it "does not escape printable characters" do
+      CaidoUtils.escape_graphql_string("Hello World! @#$%").should eq("Hello World! @#$%")
+    end
+  end
 end
 
 describe CaidoQueries::Requests do
@@ -215,6 +247,372 @@ describe CaidoMutations::Assistant do
     it "escapes message content" do
       mutation = CaidoMutations::Assistant.send_message("session123", %q(Say "hello"))
       mutation.should contain(%Q(message: "Say \\"hello\\""))
+    end
+  end
+end
+
+# Sitemap queries
+describe CaidoQueries::Sitemap do
+  describe ".root_entries" do
+    it "generates valid query" do
+      query = CaidoQueries::Sitemap.root_entries
+      query.should contain("query GetSitemapRootEntries")
+      query.should contain("sitemapRootEntries")
+    end
+
+    it "includes scope_id when provided" do
+      query = CaidoQueries::Sitemap.root_entries(scope_id: "scope123")
+      query.should contain(%Q(scopeId: "scope123"))
+    end
+  end
+
+  describe ".descendant_entries" do
+    it "generates valid query" do
+      query = CaidoQueries::Sitemap.descendant_entries("parent123")
+      query.should contain("query GetSitemapDescendantEntries")
+      query.should contain(%Q(parentId: "parent123"))
+      query.should contain("depth: DIRECT")
+    end
+  end
+
+  describe ".by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::Sitemap.by_id("entry123")
+      query.should contain("query GetSitemapEntry")
+      query.should contain(%Q(id: "entry123"))
+    end
+  end
+end
+
+# Intercept queries
+describe CaidoQueries::Intercept do
+  describe ".entries" do
+    it "generates valid query" do
+      query = CaidoQueries::Intercept.entries
+      query.should contain("query GetInterceptEntries")
+      query.should contain("first: 50")
+    end
+  end
+
+  describe ".status" do
+    it "generates valid query" do
+      query = CaidoQueries::Intercept.status
+      query.should contain("query GetInterceptStatus")
+      query.should contain("isEnabled")
+    end
+  end
+
+  describe ".options" do
+    it "generates valid query" do
+      query = CaidoQueries::Intercept.options
+      query.should contain("query GetInterceptOptions")
+      query.should contain("request")
+      query.should contain("response")
+    end
+  end
+end
+
+# Intercept mutations
+describe CaidoMutations::Intercept do
+  describe ".pause" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.pause
+      mutation.should contain("mutation PauseIntercept")
+    end
+  end
+
+  describe ".resume" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.resume
+      mutation.should contain("mutation ResumeIntercept")
+    end
+  end
+
+  describe ".forward_message" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.forward_message("msg123")
+      mutation.should contain("mutation ForwardInterceptMessage")
+      mutation.should contain(%Q(id: "msg123"))
+    end
+  end
+
+  describe ".drop_message" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.drop_message("msg123")
+      mutation.should contain("mutation DropInterceptMessage")
+      mutation.should contain(%Q(id: "msg123"))
+    end
+  end
+
+  describe ".set_options" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.set_options(request_enabled: true)
+      mutation.should contain("mutation SetInterceptOptions")
+      mutation.should contain("enabled: true")
+    end
+  end
+
+  describe ".delete_entries" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Intercept.delete_entries
+      mutation.should contain("mutation DeleteInterceptEntries")
+      mutation.should contain("deletedCount")
+    end
+
+    it "includes filter when provided" do
+      mutation = CaidoMutations::Intercept.delete_entries(filter: "host:example.com")
+      mutation.should contain(%Q(filter: "host:example.com"))
+    end
+  end
+end
+
+# Sitemap mutations
+describe CaidoMutations::Sitemap do
+  describe ".create_entries" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Sitemap.create_entries("req123")
+      mutation.should contain("mutation CreateSitemapEntries")
+      mutation.should contain(%Q(requestId: "req123"))
+    end
+  end
+
+  describe ".delete_entries" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Sitemap.delete_entries(["e1", "e2"])
+      mutation.should contain("mutation DeleteSitemapEntries")
+      mutation.should contain(%Q("e1"))
+      mutation.should contain(%Q("e2"))
+    end
+  end
+
+  describe ".clear_all" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Sitemap.clear_all
+      mutation.should contain("mutation ClearSitemapEntries")
+    end
+  end
+end
+
+# Automate queries
+describe CaidoQueries::Automate do
+  describe ".sessions" do
+    it "generates valid query" do
+      query = CaidoQueries::Automate.sessions
+      query.should contain("query GetAutomateSessions")
+      query.should contain("first: 50")
+    end
+  end
+
+  describe ".session_by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::Automate.session_by_id("auto123")
+      query.should contain("query GetAutomateSession")
+      query.should contain(%Q(id: "auto123"))
+    end
+  end
+
+  describe ".tasks" do
+    it "generates valid query" do
+      query = CaidoQueries::Automate.tasks
+      query.should contain("query GetAutomateTasks")
+    end
+  end
+end
+
+# Runtime query
+describe CaidoQueries::Runtime do
+  describe ".info" do
+    it "generates valid query" do
+      query = CaidoQueries::Runtime.info
+      query.should contain("query GetRuntime")
+      query.should contain("version")
+      query.should contain("platform")
+    end
+  end
+end
+
+# DNS queries
+describe CaidoQueries::DNS do
+  describe ".rewrites" do
+    it "generates valid query" do
+      query = CaidoQueries::DNS.rewrites
+      query.should contain("query GetDNSRewrites")
+      query.should contain("strategy")
+    end
+  end
+
+  describe ".upstreams" do
+    it "generates valid query" do
+      query = CaidoQueries::DNS.upstreams
+      query.should contain("query GetDNSUpstreams")
+      query.should contain("address")
+    end
+  end
+end
+
+# UpstreamProxies queries
+describe CaidoQueries::UpstreamProxies do
+  describe ".http" do
+    it "generates valid query" do
+      query = CaidoQueries::UpstreamProxies.http
+      query.should contain("query GetUpstreamProxiesHttp")
+      query.should contain("authentication")
+    end
+  end
+
+  describe ".socks" do
+    it "generates valid query" do
+      query = CaidoQueries::UpstreamProxies.socks
+      query.should contain("query GetUpstreamProxiesSocks")
+      query.should contain("authentication")
+    end
+  end
+end
+
+# MatchReplace queries
+describe CaidoQueries::MatchReplace do
+  describe ".rules" do
+    it "generates valid query" do
+      query = CaidoQueries::MatchReplace.rules
+      query.should contain("query GetMatchReplaceRules")
+      query.should contain("matchReplaceRuleCollections")
+    end
+  end
+
+  describe ".rule_by_id" do
+    it "generates valid query" do
+      query = CaidoQueries::MatchReplace.rule_by_id("rule123")
+      query.should contain("query GetMatchReplaceRule")
+      query.should contain(%Q(id: "rule123"))
+    end
+  end
+end
+
+# InstanceSettings query
+describe CaidoQueries::InstanceSettings do
+  describe ".get" do
+    it "generates valid query" do
+      query = CaidoQueries::InstanceSettings.get
+      query.should contain("query GetInstanceSettings")
+      query.should contain("aiProviders")
+    end
+  end
+end
+
+# Assistant queries
+describe CaidoQueries::Assistant do
+  describe ".sessions" do
+    it "generates valid query" do
+      query = CaidoQueries::Assistant.sessions
+      query.should contain("query GetAssistantSessions")
+      query.should contain("modelId")
+    end
+  end
+
+  describe ".models" do
+    it "generates valid query" do
+      query = CaidoQueries::Assistant.models
+      query.should contain("query GetAssistantModels")
+      query.should contain("provider")
+    end
+  end
+end
+
+# Project mutations
+describe CaidoMutations::Projects do
+  describe ".select" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Projects.select("proj123")
+      mutation.should contain("mutation SelectProject")
+      mutation.should contain(%Q(id: "proj123"))
+    end
+  end
+
+  describe ".create" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Projects.create("New Project")
+      mutation.should contain("mutation CreateProject")
+      mutation.should contain(%Q(name: "New Project"))
+    end
+  end
+
+  describe ".delete" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Projects.delete("proj123")
+      mutation.should contain("mutation DeleteProject")
+      mutation.should contain("deletedId")
+    end
+  end
+
+  describe ".rename" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Projects.rename("proj123", "Renamed")
+      mutation.should contain("mutation RenameProject")
+      mutation.should contain(%Q(name: "Renamed"))
+    end
+  end
+end
+
+# Workflow mutations
+describe CaidoMutations::Workflows do
+  describe ".create" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Workflows.create("My Workflow", "ACTIVE", "{}")
+      mutation.should contain("mutation CreateWorkflow")
+      mutation.should contain(%Q(name: "My Workflow"))
+      mutation.should contain("kind: ACTIVE")
+    end
+  end
+
+  describe ".update" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Workflows.update("wf123", name: "Updated")
+      mutation.should contain("mutation UpdateWorkflow")
+      mutation.should contain(%Q(name: "Updated"))
+    end
+  end
+
+  describe ".delete" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Workflows.delete("wf123")
+      mutation.should contain("mutation DeleteWorkflow")
+      mutation.should contain("deletedId")
+    end
+  end
+
+  describe ".toggle" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Workflows.toggle("wf123", true)
+      mutation.should contain("mutation ToggleWorkflow")
+      mutation.should contain("enabled: true")
+    end
+  end
+
+  describe ".run_active" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Workflows.run_active("wf123", "req456")
+      mutation.should contain("mutation RunActiveWorkflow")
+      mutation.should contain(%Q(requestId: "req456"))
+    end
+  end
+end
+
+# Request mutations
+describe CaidoMutations::Requests do
+  describe ".update_metadata" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Requests.update_metadata("req123", color: "red")
+      mutation.should contain("mutation UpdateRequestMetadata")
+      mutation.should contain(%Q(id: "req123"))
+      mutation.should contain(%Q(color: "red"))
+    end
+  end
+
+  describe ".render" do
+    it "generates valid mutation" do
+      mutation = CaidoMutations::Requests.render("req123")
+      mutation.should contain("mutation RenderRequest")
+      mutation.should contain(%Q(id: "req123"))
     end
   end
 end
