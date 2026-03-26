@@ -547,7 +547,8 @@ module CaidoMutations
       request_source = if request_id
                          %Q(requestSource: { id: "#{CaidoUtils.escape_graphql_string(request_id)}" })
                        elsif connection_info && raw
-                         sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].as(String))}") : ""
+                         sni_value = connection_info[:sni]
+                         sni_clause = sni_value ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(sni_value)}") : ""
                          conn = %Q({ host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
                          %Q(requestSource: { raw: { connectionInfo: #{conn}, raw: "#{CaidoUtils.escape_graphql_string(raw)}" } })
                        else
@@ -689,7 +690,8 @@ module CaidoMutations
 
       input_parts = [] of String
       if connection_info && raw
-        sni_clause = connection_info[:sni] ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(connection_info[:sni].as(String))}") : ""
+        sni_value = connection_info[:sni]
+        sni_clause = sni_value ? %Q(, SNI: "#{CaidoUtils.escape_graphql_string(sni_value)}") : ""
         conn = %Q(connection: { host: "#{CaidoUtils.escape_graphql_string(connection_info[:host])}", port: #{connection_info[:port]}, isTLS: #{connection_info[:is_tls]}#{sni_clause} })
         input_parts << conn
         input_parts << %Q(raw: "#{CaidoUtils.escape_graphql_string(raw)}")

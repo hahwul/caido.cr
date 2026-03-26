@@ -4,13 +4,26 @@ module CaidoUtils
   # Escapes a string for safe use in GraphQL queries
   # Prevents GraphQL injection attacks by escaping special characters
   def self.escape_graphql_string(value : String) : String
-    value.gsub("\\", "\\\\")
-      .gsub("\"", "\\\"")
-      .gsub("\n", "\\n")
-      .gsub("\r", "\\r")
-      .gsub("\t", "\\t")
-      .gsub("\b", "\\b")
-      .gsub("\f", "\\f")
+    String.build(value.bytesize) do |io|
+      value.each_char do |char|
+        case char
+        when '\\'  then io << "\\\\"
+        when '"'   then io << "\\\""
+        when '\n'  then io << "\\n"
+        when '\r'  then io << "\\r"
+        when '\t'  then io << "\\t"
+        when '\b'  then io << "\\b"
+        when '\f'  then io << "\\f"
+        else
+          if char.ord < 0x20
+            io << "\\u"
+            io << char.ord.to_s(16).rjust(4, '0')
+          else
+            io << char
+          end
+        end
+      end
+    end
   end
 
   # Helper to build pagination clauses
