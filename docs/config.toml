@@ -4,7 +4,7 @@
 
 title = "caido.cr"
 description = "Crystal client library for Caido's GraphQL API"
-base_url = ""
+base_url = "https://caido.cr.hahwul.com"
 
 # =============================================================================
 # Plugins
