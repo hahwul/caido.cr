@@ -1,0 +1,1 @@
+This is the documentation for caido.cr, a Crystal client library for Caido's GraphQL API.

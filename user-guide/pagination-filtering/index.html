@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Built-in utilities for paginated and filtered queries">
+  <title>Pagination & Filtering - caido.cr</title>
+  <meta property="og:title" content="Pagination &amp; Filtering">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">
+<meta property="og:description" content="Built-in utilities for paginated and filtered queries">
+<meta property="og:image" content="https://caido.cr.hahwul.com/og-images/user-guide-pagination-filtering.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pagination &amp; Filtering">
+<meta name="twitter:description" content="Built-in utilities for paginated and filtered queries">
+<meta name="twitter:image" content="https://caido.cr.hahwul.com/og-images/user-guide-pagination-filtering.svg">
+  <link rel="stylesheet" href="https://caido.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://caido.cr.hahwul.com/" class="logo">caido.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://caido.cr.hahwul.com/user-guide/getting-started/">User Guide</a>
+    <a href="https://caido.cr.hahwul.com/api-reference/client/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/caido.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">Pagination & Filtering</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/api-reference/client/">CaidoClient</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/utils/">Utils</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Pagination & Filtering</h1>
+    <h2 id="overview">Overview</h2>
+<p>caido.cr provides utility functions in <code>CaidoUtils</code> to build pagination and filter clauses for GraphQL queries. These are used internally by the query helpers and can also be used when building custom queries.</p>
+<h2 id="pagination">Pagination</h2>
+<p>Many Caido queries support cursor-based pagination with <code>first</code> and <code>after</code> parameters:</p>
+<pre><code class="language-crystal hljs"># First page
+query = CaidoQueries::Requests.all(first: 20)
+response = client.query(query)
+
+# Next page using cursor
+query = CaidoQueries::Requests.all(first: 20, after: &quot;cursor-from-previous-response&quot;)
+response = client.query(query)
+</code></pre>
+<h3 id="building-pagination-clauses">Building Pagination Clauses</h3>
+<p>Use <code>CaidoUtils.build_pagination</code> to construct pagination arguments:</p>
+<pre><code class="language-crystal hljs"># With first only
+clause = CaidoUtils.build_pagination(first: 10)
+# =&gt; &quot;first: 10&quot;
+
+# With first and after
+clause = CaidoUtils.build_pagination(first: 10, after: &quot;cursor123&quot;)
+# =&gt; &quot;first: 10, after: \&quot;cursor123\&quot;&quot;
+</code></pre>
+<h3 id="offset-based-pagination">Offset-Based Pagination</h3>
+<p>Some queries support offset-based pagination:</p>
+<pre><code class="language-crystal hljs">query = CaidoQueries::Requests.by_offset(offset: 0, limit: 50, filter: &quot;&quot;)
+response = client.query(query)
+</code></pre>
+<h2 id="filtering">Filtering</h2>
+<p>Filter queries using Caido's filter syntax:</p>
+<pre><code class="language-crystal hljs"># Filter requests by host
+query = CaidoQueries::Requests.all(first: 10, filter: &quot;host:example.com&quot;)
+response = client.query(query)
+
+# Filter intercept entries
+query = CaidoQueries::Intercept.entries(first: 10, filter: &quot;method:POST&quot;)
+response = client.query(query)
+</code></pre>
+<h3 id="building-filter-clauses">Building Filter Clauses</h3>
+<p>Use <code>CaidoUtils.build_filter_clause</code> to construct filter arguments:</p>
+<pre><code class="language-crystal hljs"># With filter
+clause = CaidoUtils.build_filter_clause(filter: &quot;host:example.com&quot;)
+# =&gt; &quot;, filter: \&quot;host:example.com\&quot;&quot;
+
+# Empty filter
+clause = CaidoUtils.build_filter_clause(filter: &quot;&quot;)
+# =&gt; &quot;&quot;
+</code></pre>
+<h2 id="security-string-escaping">Security: String Escaping</h2>
+<p>When passing user-supplied strings into queries, always use <code>CaidoUtils.escape_graphql_string</code> to prevent GraphQL injection:</p>
+<pre><code class="language-crystal hljs">user_input = &quot;test\&quot;injection&quot;
+safe_input = CaidoUtils.escape_graphql_string(user_input)
+# =&gt; &quot;test\\\&quot;injection&quot;
+</code></pre>
+<p>The function escapes the following characters:</p>
+<table>
+<thead>
+<tr>
+<th>Character</th>
+<th>Escaped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>\</code> (backslash)</td>
+<td><code>\\</code></td>
+</tr>
+<tr>
+<td><code>&quot;</code> (double quote)</td>
+<td><code>\&quot;</code></td>
+</tr>
+<tr>
+<td>newline</td>
+<td><code>\n</code></td>
+</tr>
+<tr>
+<td>carriage return</td>
+<td><code>\r</code></td>
+</tr>
+<tr>
+<td>tab</td>
+<td><code>\t</code></td>
+</tr>
+<tr>
+<td>backspace</td>
+<td><code>\b</code></td>
+</tr>
+<tr>
+<td>form feed</td>
+<td><code>\f</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="utility-functions">Utility Functions</h2>
+<h3 id="build-string-array"><code>build_string_array</code></h3>
+<p>Builds a GraphQL string array from a Crystal array:</p>
+<pre><code class="language-crystal hljs">result = CaidoUtils.build_string_array([&quot;*.example.com&quot;, &quot;api.test.com&quot;])
+# =&gt; &quot;[\&quot;*.example.com\&quot;, \&quot;api.test.com\&quot;]&quot;
+</code></pre>
+<h3 id="build-optional-string"><code>build_optional_string</code></h3>
+<p>Creates an optional string argument for GraphQL:</p>
+<pre><code class="language-crystal hljs">result = CaidoUtils.build_optional_string(&quot;my-value&quot;)
+# =&gt; &quot;\&quot;my-value\&quot;&quot;
+
+result = CaidoUtils.build_optional_string(&quot;&quot;)
+# =&gt; &quot;&quot;
+</code></pre>
+
+    <div class="docs-footer">
+      <p>caido.cr - Crystal client library for Caido's GraphQL API</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://caido.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

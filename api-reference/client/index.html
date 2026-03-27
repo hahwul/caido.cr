@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The GraphQL client interface">
+  <title>CaidoClient - caido.cr</title>
+  <meta property="og:title" content="CaidoClient">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://caido.cr.hahwul.com/api-reference/client/">
+<meta property="og:description" content="The GraphQL client interface">
+<meta property="og:image" content="https://caido.cr.hahwul.com/og-images/api-reference-client.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CaidoClient">
+<meta name="twitter:description" content="The GraphQL client interface">
+<meta name="twitter:image" content="https://caido.cr.hahwul.com/og-images/api-reference-client.svg">
+  <link rel="stylesheet" href="https://caido.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+</head>
+<body data-section="api-reference">
+<header class="docs-header">
+  <a href="https://caido.cr.hahwul.com/" class="logo">caido.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://caido.cr.hahwul.com/user-guide/getting-started/">User Guide</a>
+    <a href="https://caido.cr.hahwul.com/api-reference/client/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/caido.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">Pagination & Filtering</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/api-reference/client/">CaidoClient</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/utils/">Utils</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>CaidoClient</h1>
+    <h2 id="overview">Overview</h2>
+<p><code>CaidoClient</code> is the main entry point for interacting with Caido's GraphQL API. It wraps a GraphQL client, handles authentication, and provides a single <code>query</code> method for executing all operations.</p>
+<h2 id="constructors">Constructors</h2>
+<h3 id="newendpoint"><code>.new(endpoint)</code></h3>
+<pre><code class="language-crystal hljs">CaidoClient.new(endpoint : String)
+</code></pre>
+<p>Creates a client with automatic authentication. Reads the <code>CAIDO_AUTH_TOKEN</code> environment variable and sets the <code>Authorization</code> header automatically.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>endpoint</code></td>
+<td><code>String</code></td>
+<td>The Caido GraphQL API endpoint URL</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-crystal hljs">client = CaidoClient.new(&quot;http://localhost:8080/graphql&quot;)
+</code></pre>
+<h3 id="newendpoint-headers"><code>.new(endpoint, headers)</code></h3>
+<pre><code class="language-crystal hljs">CaidoClient.new(endpoint : String, headers : Hash(String, String))
+</code></pre>
+<p>Creates a client with custom headers for authentication or other purposes.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>endpoint</code></td>
+<td><code>String</code></td>
+<td>The Caido GraphQL API endpoint URL</td>
+</tr>
+<tr>
+<td><code>headers</code></td>
+<td><code>Hash(String, String)</code></td>
+<td>Custom HTTP headers</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-crystal hljs">client = CaidoClient.new(
+  &quot;http://localhost:8080/graphql&quot;,
+  {&quot;Authorization&quot; =&gt; &quot;Bearer my-token&quot;, &quot;X-Custom&quot; =&gt; &quot;value&quot;}
+)
+</code></pre>
+<h2 id="instance-methods">Instance Methods</h2>
+<h3 id="query"><code>#query</code></h3>
+<pre><code class="language-crystal hljs">client.query(query : String) : JSON::Any
+</code></pre>
+<p>Executes a GraphQL query or mutation string and returns the parsed JSON response.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query</code></td>
+<td><code>String</code></td>
+<td>A GraphQL query or mutation string</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-crystal hljs">query = CaidoQueries::Runtime.info
+response = client.query(query)
+puts response
+</code></pre>
+<h2 id="authentication">Authentication</h2>
+<p>The client supports two authentication modes:</p>
+<h3 id="automatic-environment-variable">Automatic (Environment Variable)</h3>
+<p>When using the single-argument constructor, the client checks for the <code>CAIDO_AUTH_TOKEN</code> environment variable:</p>
+<pre><code class="language-crystal hljs"># Set in your environment:
+# export CAIDO_AUTH_TOKEN=&quot;your-token&quot;
+
+client = CaidoClient.new(&quot;http://localhost:8080/graphql&quot;)
+# Authorization header is set automatically
+</code></pre>
+<h3 id="manual-custom-headers">Manual (Custom Headers)</h3>
+<p>When using the two-argument constructor, you provide headers directly:</p>
+<pre><code class="language-crystal hljs">client = CaidoClient.new(
+  &quot;http://localhost:8080/graphql&quot;,
+  {&quot;Authorization&quot; =&gt; &quot;Bearer your-token&quot;}
+)
+</code></pre>
+<h2 id="dependencies">Dependencies</h2>
+<p><code>CaidoClient</code> uses the <code>crystal-gql</code> library internally for GraphQL communication. This dependency is installed automatically via <code>shards install</code>.</p>
+
+    <div class="docs-footer">
+      <p>caido.cr - Crystal client library for Caido's GraphQL API</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://caido.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

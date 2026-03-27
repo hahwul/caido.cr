@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Working with query helpers for reading data">
+  <title>Queries - caido.cr</title>
+  <meta property="og:title" content="Queries">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://caido.cr.hahwul.com/user-guide/queries/">
+<meta property="og:description" content="Working with query helpers for reading data">
+<meta property="og:image" content="https://caido.cr.hahwul.com/og-images/user-guide-queries.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Queries">
+<meta name="twitter:description" content="Working with query helpers for reading data">
+<meta name="twitter:image" content="https://caido.cr.hahwul.com/og-images/user-guide-queries.svg">
+  <link rel="stylesheet" href="https://caido.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://caido.cr.hahwul.com/" class="logo">caido.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://caido.cr.hahwul.com/user-guide/getting-started/">User Guide</a>
+    <a href="https://caido.cr.hahwul.com/api-reference/client/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/caido.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">Pagination & Filtering</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/api-reference/client/">CaidoClient</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/utils/">Utils</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Queries</h1>
+    <h2 id="overview">Overview</h2>
+<p>The <code>CaidoQueries</code> module provides pre-built GraphQL query strings for all Caido resources. Each sub-module corresponds to a Caido feature area.</p>
+<h2 id="requests">Requests</h2>
+<p>Query HTTP request and response history:</p>
+<pre><code class="language-crystal hljs"># Get paginated requests
+query = CaidoQueries::Requests.all(first: 20)
+response = client.query(query)
+
+# With filter
+query = CaidoQueries::Requests.all(first: 10, filter: &quot;host:example.com&quot;)
+response = client.query(query)
+
+# With pagination cursor
+query = CaidoQueries::Requests.all(first: 10, after: &quot;cursor-string&quot;)
+response = client.query(query)
+
+# Get by ID (includes full request/response details)
+query = CaidoQueries::Requests.by_id(&quot;request-id&quot;)
+response = client.query(query)
+
+# Get by offset
+query = CaidoQueries::Requests.by_offset(offset: 0, limit: 20, filter: &quot;&quot;)
+response = client.query(query)
+</code></pre>
+<h2 id="sitemap">Sitemap</h2>
+<p>Explore target site structure:</p>
+<pre><code class="language-crystal hljs"># Get root sitemap entries for a scope
+query = CaidoQueries::Sitemap.root_entries(scope_id: &quot;scope-id&quot;)
+response = client.query(query)
+
+# Get descendant entries (DIRECT children or ALL descendants)
+query = CaidoQueries::Sitemap.descendant_entries(
+  parent_id: &quot;entry-id&quot;,
+  depth: &quot;DIRECT&quot;
+)
+response = client.query(query)
+
+# Get single entry
+query = CaidoQueries::Sitemap.by_id(&quot;entry-id&quot;)
+response = client.query(query)
+</code></pre>
+<h2 id="intercept">Intercept</h2>
+<p>Query the proxy intercept queue:</p>
+<pre><code class="language-crystal hljs"># Get intercepted messages
+query = CaidoQueries::Intercept.entries(first: 10)
+response = client.query(query)
+
+# Check intercept status
+query = CaidoQueries::Intercept.status
+response = client.query(query)
+
+# Get intercept options
+query = CaidoQueries::Intercept.options
+response = client.query(query)
+</code></pre>
+<h2 id="scopes">Scopes</h2>
+<p>Manage target scope definitions:</p>
+<pre><code class="language-crystal hljs"># List all scopes
+query = CaidoQueries::Scopes.all
+response = client.query(query)
+
+# Get specific scope
+query = CaidoQueries::Scopes.by_id(&quot;scope-id&quot;)
+response = client.query(query)
+</code></pre>
+<h2 id="findings">Findings</h2>
+<p>Query security findings:</p>
+<pre><code class="language-crystal hljs"># List findings
+query = CaidoQueries::Findings.all(first: 20)
+response = client.query(query)
+
+# Get specific finding
+query = CaidoQueries::Findings.by_id(&quot;finding-id&quot;)
+response = client.query(query)
+
+# Get available reporters
+query = CaidoQueries::Findings.reporters
+response = client.query(query)
+</code></pre>
+<h2 id="replay-amp-automate">Replay &amp; Automate</h2>
+<p>Work with replay and automated attack sessions:</p>
+<pre><code class="language-crystal hljs"># Replay sessions
+query = CaidoQueries::Replay.sessions(first: 10)
+response = client.query(query)
+
+query = CaidoQueries::Replay.session_by_id(&quot;session-id&quot;)
+response = client.query(query)
+
+query = CaidoQueries::Replay.collections(first: 10)
+response = client.query(query)
+
+# Automate sessions
+query = CaidoQueries::Automate.sessions(first: 10)
+response = client.query(query)
+
+query = CaidoQueries::Automate.session_by_id(&quot;session-id&quot;)
+response = client.query(query)
+
+query = CaidoQueries::Automate.tasks(first: 10)
+response = client.query(query)
+</code></pre>
+<h2 id="system-queries">System Queries</h2>
+<p>Query system-level information:</p>
+<pre><code class="language-crystal hljs"># Current user info
+query = CaidoQueries::Viewer.info
+response = client.query(query)
+
+# Runtime info (version, platform)
+query = CaidoQueries::Runtime.info
+response = client.query(query)
+
+# Instance settings
+query = CaidoQueries::InstanceSettings.get
+response = client.query(query)
+
+# DNS configuration
+query = CaidoQueries::DNS.rewrites
+query = CaidoQueries::DNS.upstreams
+
+# Upstream proxies
+query = CaidoQueries::UpstreamProxies.http
+query = CaidoQueries::UpstreamProxies.socks
+
+# Tamper rules
+query = CaidoQueries::Tamper.rules
+query = CaidoQueries::Tamper.rule_by_id(&quot;rule-id&quot;)
+
+# Workflows
+query = CaidoQueries::Workflows.all
+query = CaidoQueries::Workflows.by_id(&quot;workflow-id&quot;)
+query = CaidoQueries::Workflows.node_definitions
+
+# Projects
+query = CaidoQueries::Projects.current
+query = CaidoQueries::Projects.all
+
+# AI Assistant
+query = CaidoQueries::Assistant.sessions
+query = CaidoQueries::Assistant.models
+
+# Environments
+query = CaidoQueries::Environments.all
+query = CaidoQueries::Environments.context
+
+# Plugins
+query = CaidoQueries::Plugins.packages
+</code></pre>
+
+    <div class="docs-footer">
+      <p>caido.cr - Crystal client library for Caido's GraphQL API</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://caido.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>
