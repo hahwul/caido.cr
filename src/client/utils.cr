@@ -1,6 +1,58 @@
 # Utility functions for Caido client
 
+require "json"
+
 module CaidoUtils
+  # GraphQL enum / name pattern: starts with letter or underscore, then
+  # letters, digits, or underscores. We accept the broader Name production
+  # so callers can pass either UPPER_SNAKE enums or directives/identifiers.
+  GRAPHQL_NAME_PATTERN = /\A[_A-Za-z][_0-9A-Za-z]*\z/
+
+  # Validates a GraphQL enum / name value before it is interpolated unquoted
+  # into a query body. Rejects any input containing characters that could
+  # break out of the enum slot and inject arbitrary GraphQL.
+  #
+  # Raises ArgumentError on invalid input. This is intentionally strict: a
+  # GraphQL enum value is a Name and must not contain spaces, braces, commas,
+  # quotes, or any control characters.
+  def self.safe_enum_value(value : String) : String
+    unless GRAPHQL_NAME_PATTERN.matches?(value)
+      raise ArgumentError.new("Invalid GraphQL enum value: #{value.inspect}")
+    end
+    value
+  end
+
+  # Serializes a Crystal value (Hash, Array, scalar) into a GraphQL value
+  # literal using the GraphQL grammar (object keys are unquoted Names; string
+  # values are quoted and escaped). Use this to build mutation `input:`
+  # arguments from structured data instead of splicing a raw string.
+  def self.to_graphql_value(value) : String
+    case value
+    when Nil
+      "null"
+    when Bool
+      value ? "true" : "false"
+    when Int, Float
+      value.to_s
+    when String
+      %Q("#{escape_graphql_string(value)}")
+    when Symbol
+      safe_enum_value(value.to_s)
+    when Hash
+      pairs = value.map do |k, v|
+        key = safe_enum_value(k.to_s)
+        "#{key}: #{to_graphql_value(v)}"
+      end
+      "{ #{pairs.join(", ")} }"
+    when Array, Tuple
+      "[#{value.map { |v| to_graphql_value(v) }.join(", ")}]"
+    when JSON::Any
+      to_graphql_value(value.raw)
+    else
+      raise ArgumentError.new("Cannot serialize #{value.class} to GraphQL value")
+    end
+  end
+
   # Escapes a string for safe use in GraphQL queries
   # Prevents GraphQL injection attacks by escaping special characters
   def self.escape_graphql_string(value : String) : String
