@@ -57,7 +57,7 @@ module CaidoQueries
       args << pagination unless pagination.empty?
       args << filter_clause unless filter_clause.empty?
       args << %Q(scopeId: "#{CaidoUtils.escape_graphql_string(scope_id)}") if scope_id
-      args << %Q(order: #{order}) if order
+      args << %Q(order: #{CaidoUtils.safe_enum_value(order)}) if order
 
       args_str = args.empty? ? "" : "(#{args.join(", ")})"
       request_raw_field = include_request_raw ? "raw" : ""
@@ -146,7 +146,7 @@ module CaidoQueries
       escaped_parent_id = CaidoUtils.escape_graphql_string(parent_id)
       %Q(
         query GetSitemapDescendantEntries {
-          sitemapDescendantEntries(parentId: "#{escaped_parent_id}", depth: #{depth}) {
+          sitemapDescendantEntries(parentId: "#{escaped_parent_id}", depth: #{CaidoUtils.safe_enum_value(depth)}) {
             nodes {
               #{SITEMAP_ENTRY_FIELDS}
             }

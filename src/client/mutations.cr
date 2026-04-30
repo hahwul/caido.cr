@@ -446,7 +446,7 @@ module CaidoMutations
         mutation CreateWorkflow {
           createWorkflow(input: {
             name: "#{escaped_name}",
-            kind: #{kind},
+            kind: #{CaidoUtils.safe_enum_value(kind)},
             definition: "#{escaped_definition}",
             global: #{global}
           }) {
@@ -1021,7 +1021,7 @@ module CaidoMutations
         mutation CreateDNSRewrite {
           createDnsRewrite(input: {
             name: "#{escaped_name}",
-            strategy: #{strategy},
+            strategy: #{CaidoUtils.safe_enum_value(strategy)},
             source: "#{escaped_source}",
             destination: "#{escaped_destination}"
           }) {
@@ -1043,7 +1043,7 @@ module CaidoMutations
       escaped_id = CaidoUtils.escape_graphql_string(rewrite_id)
       updates = [] of String
       updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name)}") if name
-      updates << %Q(strategy: #{strategy}) if strategy
+      updates << %Q(strategy: #{CaidoUtils.safe_enum_value(strategy)}) if strategy
       updates << %Q(source: "#{CaidoUtils.escape_graphql_string(source)}") if source
       updates << %Q(destination: "#{CaidoUtils.escape_graphql_string(destination)}") if destination
 
@@ -1097,7 +1097,7 @@ module CaidoMutations
         mutation CreateDNSUpstream {
           createDnsUpstream(input: {
             name: "#{escaped_name}",
-            kind: #{kind},
+            kind: #{CaidoUtils.safe_enum_value(kind)},
             address: "#{escaped_address}"
           }) {
             upstream {
@@ -1116,7 +1116,7 @@ module CaidoMutations
       escaped_id = CaidoUtils.escape_graphql_string(upstream_id)
       updates = [] of String
       updates << %Q(name: "#{CaidoUtils.escape_graphql_string(name)}") if name
-      updates << %Q(kind: #{kind}) if kind
+      updates << %Q(kind: #{CaidoUtils.safe_enum_value(kind)}) if kind
       updates << %Q(address: "#{CaidoUtils.escape_graphql_string(address)}") if address
 
       %Q(
@@ -1156,7 +1156,7 @@ module CaidoMutations
       %Q(
         mutation CreateUpstreamProxyHttp {
           createUpstreamProxyHttp(input: {
-            kind: #{kind},
+            kind: #{CaidoUtils.safe_enum_value(kind)},
             address: "#{escaped_address}",
             allowlist: [#{allowlist_str}],
             denylist: [#{denylist_str}]
@@ -1181,7 +1181,7 @@ module CaidoMutations
       %Q(
         mutation CreateUpstreamProxySocks {
           createUpstreamProxySocks(input: {
-            kind: #{kind},
+            kind: #{CaidoUtils.safe_enum_value(kind)},
             address: "#{escaped_address}",
             allowlist: [#{allowlist_str}],
             denylist: [#{denylist_str}]
@@ -1560,7 +1560,26 @@ module CaidoMutations
   end
 
   module InstanceSettings
-    # Set instance settings
+    # Set instance settings using a structured Hash. The hash is serialized
+    # into a GraphQL object literal with proper escaping; this is the
+    # recommended overload because it cannot result in GraphQL injection.
+    #
+    # Example:
+    #   Caido::Mutations::InstanceSettings.set({
+    #     "aiProviders" => {
+    #       "openai" => { "apiKey" => api_key },
+    #     },
+    #   })
+    def self.set(input : Hash)
+      set(CaidoUtils.to_graphql_value(input))
+    end
+
+    # Set instance settings using a raw GraphQL object literal string.
+    #
+    # WARNING: the input is interpolated verbatim into the mutation body.
+    # Callers MUST guarantee the value is a trusted, well-formed GraphQL
+    # object literal — never derive it from untrusted input. Prefer the
+    # `Hash` overload above.
     def self.set(input : String)
       %Q(
         mutation SetInstanceSettings {

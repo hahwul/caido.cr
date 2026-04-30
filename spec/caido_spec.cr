@@ -885,3 +885,79 @@ describe CaidoQueries::Viewer do
     end
   end
 end
+
+describe "CaidoUtils GraphQL injection guards" do
+  describe ".safe_enum_value" do
+    it "accepts plain enum values" do
+      CaidoUtils.safe_enum_value("ASC").should eq("ASC")
+      CaidoUtils.safe_enum_value("UPPER_SNAKE_1").should eq("UPPER_SNAKE_1")
+    end
+
+    it "rejects values that try to break out of the enum slot" do
+      expect_raises(ArgumentError) { CaidoUtils.safe_enum_value("ASC } viewer { id }") }
+      expect_raises(ArgumentError) { CaidoUtils.safe_enum_value(%q(ASC", extra: "x)) }
+      expect_raises(ArgumentError) { CaidoUtils.safe_enum_value("ASC EXTRA") }
+      expect_raises(ArgumentError) { CaidoUtils.safe_enum_value("") }
+    end
+  end
+
+  describe ".to_graphql_value" do
+    it "serializes scalars and nested objects" do
+      CaidoUtils.to_graphql_value(nil).should eq("null")
+      CaidoUtils.to_graphql_value(true).should eq("true")
+      CaidoUtils.to_graphql_value(42).should eq("42")
+      CaidoUtils.to_graphql_value({"a" => {"b" => "c"}}).should eq(%q({ a: { b: "c" } }))
+      CaidoUtils.to_graphql_value(["a", "b"]).should eq(%q(["a", "b"]))
+    end
+
+    it "rejects keys that would inject GraphQL" do
+      expect_raises(ArgumentError) { CaidoUtils.to_graphql_value({"a } b" => 1}) }
+    end
+
+    it "escapes attempts to break out of string values" do
+      payload = {"k" => %q(v" }, attack: "x)}
+      result = CaidoUtils.to_graphql_value(payload)
+      # Embedded quotes must be backslash-escaped so the GraphQL string
+      # literal stays balanced.
+      result.should eq(%q({ k: "v\" }, attack: \"x" }))
+    end
+  end
+
+  describe "callers that interpolate enum-style args" do
+    it "raises on injection in workflow kind" do
+      expect_raises(ArgumentError) do
+        CaidoMutations::Workflows.create("n", "PASSIVE } extra { x ", "{}")
+      end
+    end
+
+    it "raises on injection in DNS rewrite strategy" do
+      expect_raises(ArgumentError) do
+        CaidoMutations::DNS.create_rewrite("n", "BLOCK } extra ", "s", "d")
+      end
+    end
+
+    it "raises on injection in request order" do
+      expect_raises(ArgumentError) do
+        CaidoQueries::Requests.all(order: "ASC } viewer { id }")
+      end
+    end
+  end
+
+  describe "InstanceSettings.set hash overload" do
+    it "serializes a hash into a safe GraphQL object literal" do
+      query = CaidoMutations::InstanceSettings.set({
+        "aiProviders" => {"openai" => {"apiKey" => "secret"}},
+      })
+      query.should contain(%q(aiProviders: { openai: { apiKey: "secret" } }))
+    end
+
+    it "escapes attempts to break out of string values" do
+      query = CaidoMutations::InstanceSettings.set({
+        "aiProviders" => {"openai" => {"apiKey" => %q(a" }, attack: "x)}},
+      })
+      # Quote and brace are escaped, so the embedded payload stays inside
+      # the apiKey string literal instead of injecting sibling fields.
+      query.should contain(%q(apiKey: "a\" }, attack: \"x"))
+    end
+  end
+end
