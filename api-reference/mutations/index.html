@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete mutation module reference">
+  <title>Mutations - caido.cr</title>
+  <meta property="og:title" content="Mutations">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://caido.cr.hahwul.com/api-reference/mutations/">
+<meta property="og:description" content="Complete mutation module reference">
+<meta property="og:image" content="https://caido.cr.hahwul.com/og-images/api-reference-mutations.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mutations">
+<meta name="twitter:description" content="Complete mutation module reference">
+<meta name="twitter:image" content="https://caido.cr.hahwul.com/og-images/api-reference-mutations.svg">
+  <link rel="stylesheet" href="https://caido.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+</head>
+<body data-section="api-reference">
+<header class="docs-header">
+  <a href="https://caido.cr.hahwul.com/" class="logo">caido.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://caido.cr.hahwul.com/user-guide/getting-started/">User Guide</a>
+    <a href="https://caido.cr.hahwul.com/api-reference/client/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/caido.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">Pagination & Filtering</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/api-reference/client/">CaidoClient</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/utils/">Utils</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Mutations</h1>
+    <h2 id="overview">Overview</h2>
+<p>The <code>CaidoMutations</code> module contains sub-modules that return pre-built GraphQL mutation strings. Each method returns a <code>String</code> that can be passed to <code>CaidoClient#query</code>.</p>
+<h2 id="caidomutationsrequests">CaidoMutations::Requests</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.update_metadata</code></td>
+<td><code>id</code>, <code>color</code>, <code>label</code></td>
+<td>Update request metadata</td>
+</tr>
+<tr>
+<td><code>.render</code></td>
+<td><code>id</code></td>
+<td>Render request with variables</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationssitemap">CaidoMutations::Sitemap</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_entries</code></td>
+<td><code>request_id</code></td>
+<td>Create sitemap entries from request</td>
+</tr>
+<tr>
+<td><code>.delete_entries</code></td>
+<td><code>ids</code></td>
+<td>Delete multiple entries</td>
+</tr>
+<tr>
+<td><code>.clear_all</code></td>
+<td>--</td>
+<td>Clear all sitemap entries</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsintercept">CaidoMutations::Intercept</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.pause</code></td>
+<td>--</td>
+<td>Pause interception</td>
+</tr>
+<tr>
+<td><code>.resume</code></td>
+<td>--</td>
+<td>Resume interception</td>
+</tr>
+<tr>
+<td><code>.forward_message</code></td>
+<td><code>id</code>, <code>request</code>, <code>response</code></td>
+<td>Forward intercepted message</td>
+</tr>
+<tr>
+<td><code>.drop_message</code></td>
+<td><code>id</code></td>
+<td>Drop intercepted message</td>
+</tr>
+<tr>
+<td><code>.set_options</code></td>
+<td>--</td>
+<td>Configure intercept behavior</td>
+</tr>
+<tr>
+<td><code>.delete_entries</code></td>
+<td><code>filter</code></td>
+<td>Delete intercept queue</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsscopes">CaidoMutations::Scopes</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create</code></td>
+<td><code>name</code>, <code>allowlist</code>, <code>denylist</code></td>
+<td>Create a scope</td>
+</tr>
+<tr>
+<td><code>.update</code></td>
+<td><code>id</code>, <code>name</code>, <code>allowlist</code>, <code>denylist</code></td>
+<td>Update a scope</td>
+</tr>
+<tr>
+<td><code>.delete</code></td>
+<td><code>id</code></td>
+<td>Delete a scope</td>
+</tr>
+<tr>
+<td><code>.rename</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename a scope</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsfindings">CaidoMutations::Findings</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create</code></td>
+<td><code>request_id</code>, <code>title</code>, <code>description</code>, <code>reporter</code></td>
+<td>Create a finding</td>
+</tr>
+<tr>
+<td><code>.update</code></td>
+<td><code>id</code>, <code>title</code>, <code>description</code></td>
+<td>Update a finding</td>
+</tr>
+<tr>
+<td><code>.delete</code></td>
+<td><code>ids</code></td>
+<td>Delete findings</td>
+</tr>
+<tr>
+<td><code>.hide</code></td>
+<td><code>ids</code></td>
+<td>Hide findings</td>
+</tr>
+<tr>
+<td><code>.export</code></td>
+<td><code>ids</code></td>
+<td>Export findings</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsprojects">CaidoMutations::Projects</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.select</code></td>
+<td><code>id</code></td>
+<td>Select active project</td>
+</tr>
+<tr>
+<td><code>.create</code></td>
+<td><code>name</code>, <code>path</code></td>
+<td>Create a project</td>
+</tr>
+<tr>
+<td><code>.delete</code></td>
+<td><code>id</code></td>
+<td>Delete a project</td>
+</tr>
+<tr>
+<td><code>.rename</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename a project</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsworkflows">CaidoMutations::Workflows</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create</code></td>
+<td><code>name</code>, <code>kind</code>, <code>definition</code></td>
+<td>Create a workflow</td>
+</tr>
+<tr>
+<td><code>.update</code></td>
+<td><code>id</code>, <code>name</code>, <code>definition</code></td>
+<td>Update a workflow</td>
+</tr>
+<tr>
+<td><code>.delete</code></td>
+<td><code>id</code></td>
+<td>Delete a workflow</td>
+</tr>
+<tr>
+<td><code>.rename</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename a workflow</td>
+</tr>
+<tr>
+<td><code>.toggle</code></td>
+<td><code>id</code>, <code>enabled</code></td>
+<td>Enable/disable a workflow</td>
+</tr>
+<tr>
+<td><code>.run_active</code></td>
+<td><code>id</code>, <code>request_id</code></td>
+<td>Execute workflow on a request</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsreplay">CaidoMutations::Replay</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_session</code></td>
+<td><code>name</code>, <code>source</code>, <code>collection_id</code></td>
+<td>Create replay session</td>
+</tr>
+<tr>
+<td><code>.create_collection</code></td>
+<td><code>name</code></td>
+<td>Create session collection</td>
+</tr>
+<tr>
+<td><code>.delete_sessions</code></td>
+<td><code>ids</code></td>
+<td>Delete sessions</td>
+</tr>
+<tr>
+<td><code>.delete_collection</code></td>
+<td><code>id</code></td>
+<td>Delete collection</td>
+</tr>
+<tr>
+<td><code>.rename_session</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename session</td>
+</tr>
+<tr>
+<td><code>.rename_collection</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename collection</td>
+</tr>
+<tr>
+<td><code>.move_session</code></td>
+<td><code>id</code>, <code>collection_id</code></td>
+<td>Move session to collection</td>
+</tr>
+<tr>
+<td><code>.start_task</code></td>
+<td><code>session_id</code></td>
+<td>Start replay task</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsautomate">CaidoMutations::Automate</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_session</code></td>
+<td><code>name</code>, <code>host</code>, <code>port</code>, <code>is_tls</code></td>
+<td>Create attack session</td>
+</tr>
+<tr>
+<td><code>.delete_session</code></td>
+<td><code>id</code></td>
+<td>Delete session</td>
+</tr>
+<tr>
+<td><code>.rename_session</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename session</td>
+</tr>
+<tr>
+<td><code>.duplicate_session</code></td>
+<td><code>id</code></td>
+<td>Duplicate session</td>
+</tr>
+<tr>
+<td><code>.start_task</code></td>
+<td><code>session_id</code></td>
+<td>Start attack task</td>
+</tr>
+<tr>
+<td><code>.pause_task</code></td>
+<td><code>id</code></td>
+<td>Pause task</td>
+</tr>
+<tr>
+<td><code>.resume_task</code></td>
+<td><code>id</code></td>
+<td>Resume task</td>
+</tr>
+<tr>
+<td><code>.cancel_task</code></td>
+<td><code>id</code></td>
+<td>Cancel task</td>
+</tr>
+<tr>
+<td><code>.delete_entries</code></td>
+<td><code>ids</code></td>
+<td>Delete automate entries</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationstamper">CaidoMutations::Tamper</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_rule</code></td>
+<td>--</td>
+<td>Create a tamper rule</td>
+</tr>
+<tr>
+<td><code>.update_rule</code></td>
+<td>--</td>
+<td>Update a tamper rule</td>
+</tr>
+<tr>
+<td><code>.delete_rule</code></td>
+<td>--</td>
+<td>Delete a tamper rule</td>
+</tr>
+<tr>
+<td><code>.toggle_rule</code></td>
+<td><code>id</code>, <code>enabled</code></td>
+<td>Enable/disable a rule</td>
+</tr>
+<tr>
+<td><code>.rename_rule</code></td>
+<td>--</td>
+<td>Rename a rule</td>
+</tr>
+<tr>
+<td><code>.create_collection</code></td>
+<td>--</td>
+<td>Create a tamper collection</td>
+</tr>
+<tr>
+<td><code>.delete_collection</code></td>
+<td>--</td>
+<td>Delete a tamper collection</td>
+</tr>
+<tr>
+<td><code>.rename_collection</code></td>
+<td>--</td>
+<td>Rename a tamper collection</td>
+</tr>
+<tr>
+<td><code>.move_rule</code></td>
+<td>--</td>
+<td>Move rule to collection</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsdns">CaidoMutations::DNS</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_rewrite</code></td>
+<td>--</td>
+<td>Create a DNS rewrite rule</td>
+</tr>
+<tr>
+<td><code>.update_rewrite</code></td>
+<td>--</td>
+<td>Update a DNS rewrite rule</td>
+</tr>
+<tr>
+<td><code>.delete_rewrite</code></td>
+<td>--</td>
+<td>Delete a DNS rewrite rule</td>
+</tr>
+<tr>
+<td><code>.toggle_rewrite</code></td>
+<td>--</td>
+<td>Enable/disable a rewrite rule</td>
+</tr>
+<tr>
+<td><code>.create_upstream</code></td>
+<td>--</td>
+<td>Create a DNS upstream</td>
+</tr>
+<tr>
+<td><code>.update_upstream</code></td>
+<td>--</td>
+<td>Update a DNS upstream</td>
+</tr>
+<tr>
+<td><code>.delete_upstream</code></td>
+<td>--</td>
+<td>Delete a DNS upstream</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsupstreamproxies">CaidoMutations::UpstreamProxies</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_http</code></td>
+<td>--</td>
+<td>Create HTTP upstream proxy</td>
+</tr>
+<tr>
+<td><code>.delete_http</code></td>
+<td><code>id</code></td>
+<td>Delete HTTP upstream proxy</td>
+</tr>
+<tr>
+<td><code>.toggle_http</code></td>
+<td>--</td>
+<td>Enable/disable HTTP proxy</td>
+</tr>
+<tr>
+<td><code>.create_socks</code></td>
+<td>--</td>
+<td>Create SOCKS upstream proxy</td>
+</tr>
+<tr>
+<td><code>.delete_socks</code></td>
+<td><code>id</code></td>
+<td>Delete SOCKS upstream proxy</td>
+</tr>
+<tr>
+<td><code>.toggle_socks</code></td>
+<td>--</td>
+<td>Enable/disable SOCKS proxy</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsassistant">CaidoMutations::Assistant</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.create_session</code></td>
+<td><code>model_id</code>, <code>name</code></td>
+<td>Create AI session</td>
+</tr>
+<tr>
+<td><code>.delete_session</code></td>
+<td><code>id</code></td>
+<td>Delete AI session</td>
+</tr>
+<tr>
+<td><code>.rename_session</code></td>
+<td><code>id</code>, <code>name</code></td>
+<td>Rename AI session</td>
+</tr>
+<tr>
+<td><code>.send_message</code></td>
+<td><code>session_id</code>, <code>message</code></td>
+<td>Send message to AI</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationsauthentication">CaidoMutations::Authentication</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.start_flow</code></td>
+<td>--</td>
+<td>Begin authentication flow</td>
+</tr>
+<tr>
+<td><code>.login_guest</code></td>
+<td>--</td>
+<td>Login as guest</td>
+</tr>
+<tr>
+<td><code>.logout</code></td>
+<td>--</td>
+<td>Logout</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caidomutationstasks">CaidoMutations::Tasks</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.cancel</code></td>
+<td><code>id</code></td>
+<td>Cancel a running task</td>
+</tr>
+</tbody>
+</table>
+
+    <div class="docs-footer">
+      <p>caido.cr - Crystal client library for Caido's GraphQL API</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://caido.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>

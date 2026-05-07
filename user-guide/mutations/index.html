@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Working with mutation helpers for write operations">
+  <title>Mutations - caido.cr</title>
+  <meta property="og:title" content="Mutations">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://caido.cr.hahwul.com/user-guide/mutations/">
+<meta property="og:description" content="Working with mutation helpers for write operations">
+<meta property="og:image" content="https://caido.cr.hahwul.com/og-images/user-guide-mutations.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mutations">
+<meta name="twitter:description" content="Working with mutation helpers for write operations">
+<meta name="twitter:image" content="https://caido.cr.hahwul.com/og-images/user-guide-mutations.svg">
+  <link rel="stylesheet" href="https://caido.cr.hahwul.com/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  
+</head>
+<body data-section="user-guide">
+<header class="docs-header">
+  <a href="https://caido.cr.hahwul.com/" class="logo">caido.cr <span>Documentation</span></a>
+  <nav>
+    <a href="https://caido.cr.hahwul.com/user-guide/getting-started/">User Guide</a>
+    <a href="https://caido.cr.hahwul.com/api-reference/client/">API Reference</a>
+  </nav>
+  <div class="header-right">
+    <button class="search-trigger" onclick="openSearch()" title="Search (⌘K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+      <kbd>⌘K</kbd>
+    </button>
+    <a href="https://github.com/hahwul/caido.cr">GitHub</a>
+  </div>
+</header>
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-modal">
+    <div class="search-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search documentation..." autocomplete="off">
+      <kbd onclick="closeSearch()">ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+<div class="docs-container">
+  <aside class="docs-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">User Guide</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/user-guide/getting-started/">Getting Started</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/basic-usage/">Basic Usage</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/user-guide/pagination-filtering/">Pagination & Filtering</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">API Reference</div>
+      <ul class="sidebar-links">
+        <li><a href="https://caido.cr.hahwul.com/api-reference/client/">CaidoClient</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/queries/">Queries</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/mutations/">Mutations</a></li>
+        <li><a href="https://caido.cr.hahwul.com/api-reference/utils/">Utils</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-main">
+    <h1>Mutations</h1>
+    <h2 id="overview">Overview</h2>
+<p>The <code>CaidoMutations</code> module provides pre-built GraphQL mutation strings for creating, updating, and deleting Caido resources.</p>
+<h2 id="requests">Requests</h2>
+<p>Update request metadata:</p>
+<pre><code class="language-crystal hljs"># Update metadata (color and label)
+mutation = CaidoMutations::Requests.update_metadata(
+  id: &quot;request-id&quot;,
+  color: &quot;red&quot;,
+  label: &quot;interesting&quot;
+)
+response = client.query(mutation)
+
+# Render a request
+mutation = CaidoMutations::Requests.render(id: &quot;request-id&quot;)
+response = client.query(mutation)
+</code></pre>
+<h2 id="intercept">Intercept</h2>
+<p>Control the proxy intercept:</p>
+<pre><code class="language-crystal hljs"># Pause/resume interception
+mutation = CaidoMutations::Intercept.pause
+mutation = CaidoMutations::Intercept.resume
+
+# Forward an intercepted message
+mutation = CaidoMutations::Intercept.forward_message(
+  id: &quot;message-id&quot;,
+  request: &quot;GET / HTTP/1.1\r\nHost: example.com\r\n\r\n&quot;,
+  response: &quot;&quot;
+)
+response = client.query(mutation)
+
+# Drop an intercepted message
+mutation = CaidoMutations::Intercept.drop_message(id: &quot;message-id&quot;)
+response = client.query(mutation)
+</code></pre>
+<h2 id="scopes">Scopes</h2>
+<p>Manage target scopes:</p>
+<pre><code class="language-crystal hljs"># Create a scope
+mutation = CaidoMutations::Scopes.create(
+  name: &quot;My Target&quot;,
+  allowlist: [&quot;*.example.com&quot;, &quot;api.example.com&quot;],
+  denylist: [&quot;admin.example.com&quot;]
+)
+response = client.query(mutation)
+
+# Update a scope
+mutation = CaidoMutations::Scopes.update(
+  id: &quot;scope-id&quot;,
+  name: &quot;Updated Target&quot;,
+  allowlist: [&quot;*.example.com&quot;],
+  denylist: []
+)
+response = client.query(mutation)
+
+# Delete a scope
+mutation = CaidoMutations::Scopes.delete(id: &quot;scope-id&quot;)
+response = client.query(mutation)
+</code></pre>
+<h2 id="findings">Findings</h2>
+<p>Manage security findings:</p>
+<pre><code class="language-crystal hljs"># Create a finding
+mutation = CaidoMutations::Findings.create(
+  request_id: &quot;req-123&quot;,
+  title: &quot;SQL Injection&quot;,
+  description: &quot;Found in login form parameter&quot;,
+  reporter: &quot;manual-testing&quot;
+)
+response = client.query(mutation)
+
+# Update a finding
+mutation = CaidoMutations::Findings.update(
+  id: &quot;finding-id&quot;,
+  title: &quot;SQL Injection (Confirmed)&quot;,
+  description: &quot;Confirmed blind SQL injection&quot;
+)
+response = client.query(mutation)
+
+# Delete findings
+mutation = CaidoMutations::Findings.delete(ids: [&quot;finding-1&quot;, &quot;finding-2&quot;])
+response = client.query(mutation)
+
+# Export findings
+mutation = CaidoMutations::Findings.export(ids: [&quot;finding-1&quot;])
+response = client.query(mutation)
+</code></pre>
+<h2 id="workflows">Workflows</h2>
+<p>Manage automation workflows:</p>
+<pre><code class="language-crystal hljs"># Create a workflow
+mutation = CaidoMutations::Workflows.create(
+  name: &quot;My Workflow&quot;,
+  kind: &quot;active&quot;,
+  definition: &quot;{}&quot;
+)
+response = client.query(mutation)
+
+# Toggle workflow
+mutation = CaidoMutations::Workflows.toggle(id: &quot;workflow-id&quot;, enabled: true)
+response = client.query(mutation)
+
+# Run workflow on a request
+mutation = CaidoMutations::Workflows.run_active(
+  id: &quot;workflow-id&quot;,
+  request_id: &quot;request-id&quot;
+)
+response = client.query(mutation)
+
+# Delete workflow
+mutation = CaidoMutations::Workflows.delete(id: &quot;workflow-id&quot;)
+response = client.query(mutation)
+</code></pre>
+<h2 id="replay">Replay</h2>
+<p>Manage request replay sessions:</p>
+<pre><code class="language-crystal hljs"># Create a replay session
+mutation = CaidoMutations::Replay.create_session(
+  name: &quot;Test Session&quot;,
+  source: &quot;request-source&quot;,
+  collection_id: &quot;collection-id&quot;
+)
+response = client.query(mutation)
+
+# Start a replay task
+mutation = CaidoMutations::Replay.start_task(session_id: &quot;session-id&quot;)
+response = client.query(mutation)
+
+# Create a collection
+mutation = CaidoMutations::Replay.create_collection(name: &quot;My Collection&quot;)
+response = client.query(mutation)
+</code></pre>
+<h2 id="automate">Automate</h2>
+<p>Control automated attack sessions:</p>
+<pre><code class="language-crystal hljs"># Create a session
+mutation = CaidoMutations::Automate.create_session(
+  name: &quot;Brute Force&quot;,
+  host: &quot;example.com&quot;,
+  port: 443,
+  is_tls: true
+)
+response = client.query(mutation)
+
+# Start/pause/resume/cancel tasks
+mutation = CaidoMutations::Automate.start_task(session_id: &quot;session-id&quot;)
+mutation = CaidoMutations::Automate.pause_task(id: &quot;task-id&quot;)
+mutation = CaidoMutations::Automate.resume_task(id: &quot;task-id&quot;)
+mutation = CaidoMutations::Automate.cancel_task(id: &quot;task-id&quot;)
+</code></pre>
+<h2 id="tamper-rules">Tamper Rules</h2>
+<p>Manage request/response tampering:</p>
+<pre><code class="language-crystal hljs"># Create a tamper rule
+mutation = CaidoMutations::Tamper.create_rule
+response = client.query(mutation)
+
+# Toggle a rule
+mutation = CaidoMutations::Tamper.toggle_rule(id: &quot;rule-id&quot;, enabled: true)
+response = client.query(mutation)
+
+# Manage collections
+mutation = CaidoMutations::Tamper.create_collection
+mutation = CaidoMutations::Tamper.delete_collection(id: &quot;collection-id&quot;)
+</code></pre>
+<h2 id="dns-amp-proxies">DNS &amp; Proxies</h2>
+<p>Configure DNS and upstream proxies:</p>
+<pre><code class="language-crystal hljs"># DNS rewrites
+mutation = CaidoMutations::DNS.create_rewrite
+mutation = CaidoMutations::DNS.delete_rewrite(id: &quot;rewrite-id&quot;)
+
+# DNS upstreams
+mutation = CaidoMutations::DNS.create_upstream
+mutation = CaidoMutations::DNS.delete_upstream(id: &quot;upstream-id&quot;)
+
+# HTTP upstream proxies
+mutation = CaidoMutations::UpstreamProxies.create_http
+mutation = CaidoMutations::UpstreamProxies.delete_http(id: &quot;proxy-id&quot;)
+
+# SOCKS upstream proxies
+mutation = CaidoMutations::UpstreamProxies.create_socks
+mutation = CaidoMutations::UpstreamProxies.delete_socks(id: &quot;proxy-id&quot;)
+</code></pre>
+<h2 id="authentication">Authentication</h2>
+<p>Handle authentication flows:</p>
+<pre><code class="language-crystal hljs"># Start auth flow
+mutation = CaidoMutations::Authentication.start_flow
+response = client.query(mutation)
+
+# Login as guest
+mutation = CaidoMutations::Authentication.login_guest
+response = client.query(mutation)
+
+# Logout
+mutation = CaidoMutations::Authentication.logout
+response = client.query(mutation)
+</code></pre>
+
+    <div class="docs-footer">
+      <p>caido.cr - Crystal client library for Caido's GraphQL API</p>
+    </div>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script src="https://caido.cr.hahwul.com/js/search.js"></script>
+</body>
+</html>
