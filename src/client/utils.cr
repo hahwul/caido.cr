@@ -59,13 +59,13 @@ module CaidoUtils
     String.build(value.bytesize) do |io|
       value.each_char do |char|
         case char
-        when '\\'  then io << "\\\\"
-        when '"'   then io << "\\\""
-        when '\n'  then io << "\\n"
-        when '\r'  then io << "\\r"
-        when '\t'  then io << "\\t"
-        when '\b'  then io << "\\b"
-        when '\f'  then io << "\\f"
+        when '\\' then io << "\\\\"
+        when '"'  then io << "\\\""
+        when '\n' then io << "\\n"
+        when '\r' then io << "\\r"
+        when '\t' then io << "\\t"
+        when '\b' then io << "\\b"
+        when '\f' then io << "\\f"
         else
           if char.ord < 0x20
             io << "\\u"
