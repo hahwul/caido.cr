@@ -32,7 +32,12 @@ module CaidoUtils
       "null"
     when Bool
       value ? "true" : "false"
-    when Int, Float
+    when Int
+      value.to_s
+    when Float
+      # GraphQL's FloatValue grammar has no spelling for NaN or Infinity:
+      # `NaN` would parse as an enum value and `-Infinity` is a syntax error.
+      raise ArgumentError.new("Cannot serialize non-finite Float #{value} to GraphQL value") unless value.finite?
       value.to_s
     when String
       %Q("#{escape_graphql_string(value)}")
