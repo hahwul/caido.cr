@@ -154,7 +154,18 @@ class CaidoClient
         password = uri.password
         client.basic_auth(user, password) if user && password
 
-        client.post(uri.request_target, headers: @headers, body: request_body)
+        {% if flag?(:without_openssl) %}
+          client.post(uri.request_target, headers: @headers, body: request_body)
+        {% else %}
+          begin
+            client.post(uri.request_target, headers: @headers, body: request_body)
+          rescue ex : OpenSSL::Error
+            # A failed TLS handshake or read is a connection failure, but
+            # OpenSSL::Error is not an IO::Error; wrap it so it surfaces
+            # as ConnectionError like every other transport failure.
+            raise TransportError.new("TLS error talking to #{safe_endpoint}: #{ex.message}")
+          end
+        {% end %}
       ensure
         client.close
       end

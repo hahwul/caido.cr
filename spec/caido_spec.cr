@@ -86,6 +86,17 @@ describe CaidoClient do
         client.query("{ __typename }")
       end
     end
+
+    it "wraps a TLS handshake failure in ConnectionError" do
+      # Speaking TLS to a plain-HTTP server fails the handshake with an
+      # OpenSSL::SSL::Error, which is not an IO::Error and used to escape.
+      with_graphql_server(200, %({"data":{}})) do |endpoint|
+        client = CaidoClient.new(endpoint.sub("http://", "https://"))
+        expect_raises(CaidoClient::ConnectionError, /TLS/) do
+          client.query("{ __typename }")
+        end
+      end
+    end
   end
 
   describe CaidoClient::GraphQLError do
@@ -1003,6 +1014,15 @@ describe "CaidoUtils GraphQL injection guards" do
 
     it "rejects keys that would inject GraphQL" do
       expect_raises(ArgumentError) { CaidoUtils.to_graphql_value({"a } b" => 1}) }
+    end
+
+    it "rejects non-finite floats, which have no GraphQL literal" do
+      # `NaN`/`Infinity` would be read as enum values and `-Infinity` is a
+      # syntax error; GraphQL's FloatValue grammar only spells finite numbers.
+      CaidoUtils.to_graphql_value(1.5).should eq("1.5")
+      [Float64::NAN, Float64::INFINITY, -Float64::INFINITY, Float32::NAN].each do |value|
+        expect_raises(ArgumentError, /non-finite/) { CaidoUtils.to_graphql_value({"a" => value}) }
+      end
     end
 
     it "escapes attempts to break out of string values" do
