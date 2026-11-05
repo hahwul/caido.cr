@@ -15,8 +15,12 @@ module CaidoUtils
   # Raises ArgumentError on invalid input. This is intentionally strict: a
   # GraphQL enum value is a Name and must not contain spaces, braces, commas,
   # quotes, or any control characters.
+  #
+  # `true`, `false` and `null` match Name but are not EnumValues (spec
+  # §2.9.6, "EnumValue : Name but not `true` or `false` or `null`"): spliced
+  # into an enum slot they would silently become a Boolean or null literal.
   def self.safe_enum_value(value : String) : String
-    unless GRAPHQL_NAME_PATTERN.matches?(value)
+    if !GRAPHQL_NAME_PATTERN.matches?(value) || value.in?("true", "false", "null")
       raise ArgumentError.new("Invalid GraphQL enum value: #{value.inspect}")
     end
     value
@@ -45,7 +49,9 @@ module CaidoUtils
       safe_enum_value(value.to_s)
     when Hash
       pairs = value.map do |k, v|
-        key = safe_enum_value(k.to_s)
+        # Object field keys are plain Names, so `null`/`true` are allowed.
+        key = k.to_s
+        raise ArgumentError.new("Invalid GraphQL name: #{key.inspect}") unless GRAPHQL_NAME_PATTERN.matches?(key)
         "#{key}: #{to_graphql_value(v)}"
       end
       "{ #{pairs.join(", ")} }"

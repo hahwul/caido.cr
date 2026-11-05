@@ -37,6 +37,24 @@ private def with_recording_server(body : String, & : String, Array(String) ->)
   end
 end
 
+# Replies to one connection with raw bytes, for responses HTTP::Server can't
+# produce (a garbled status line, a corrupt Content-Length, ...).
+private def with_raw_http_server(raw : String, & : String ->)
+  server = TCPServer.new("127.0.0.1", 0)
+  spawn do
+    if socket = server.accept?
+      socket.read(Bytes.new(65536)) rescue nil
+      socket.write(raw.to_slice) rescue nil
+      socket.close
+    end
+  end
+  begin
+    yield "http://127.0.0.1:#{server.local_address.port}/graphql"
+  ensure
+    server.close
+  end
+end
+
 describe Caido do
   it "has a version" do
     Caido::VERSION.should eq("0.1.0")
@@ -94,6 +112,24 @@ describe CaidoClient do
         client = CaidoClient.new(endpoint.sub("http://", "https://"))
         expect_raises(CaidoClient::ConnectionError, /TLS/) do
           client.query("{ __typename }")
+        end
+      end
+    end
+
+    it "wraps a malformed HTTP response in ConnectionError" do
+      # HTTP::Client raises these as a bare Exception, ArgumentError or
+      # Compress::Zlib::Error, none of which is an IO::Error.
+      [
+        "garbage\r\n\r\n",
+        "HTTP/1.1 abc OK\r\nContent-Length: 2\r\n\r\n{}",
+        "HTTP/1.1 200 OK\r\nContent-Length: abc\r\n\r\n{}",
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=bogus\r\nContent-Length: 2\r\n\r\n{}",
+        "HTTP/1.1 200 OK\r\nContent-Encoding: deflate\r\nContent-Length: 5\r\n\r\nhello",
+      ].each do |raw|
+        with_raw_http_server(raw) do |endpoint|
+          expect_raises(CaidoClient::ConnectionError, /Malformed HTTP response/) do
+            CaidoClient.new(endpoint).query("{ __typename }")
+          end
         end
       end
     end
@@ -1001,6 +1037,15 @@ describe "CaidoUtils GraphQL injection guards" do
       expect_raises(ArgumentError) { CaidoUtils.safe_enum_value("ASC EXTRA") }
       expect_raises(ArgumentError) { CaidoUtils.safe_enum_value("") }
     end
+
+    it "rejects the reserved names true, false and null" do
+      # They match Name but parse as Boolean/null literals, not enum values.
+      {"true" => :true, "false" => :false, "null" => :null}.each do |word, sym|
+        expect_raises(ArgumentError) { CaidoUtils.safe_enum_value(word) }
+        expect_raises(ArgumentError) { CaidoUtils.to_graphql_value(sym) }
+      end
+      expect_raises(ArgumentError) { CaidoQueries::Sitemap.descendant_entries("1", depth: "null") }
+    end
   end
 
   describe ".to_graphql_value" do
@@ -1014,6 +1059,8 @@ describe "CaidoUtils GraphQL injection guards" do
 
     it "rejects keys that would inject GraphQL" do
       expect_raises(ArgumentError) { CaidoUtils.to_graphql_value({"a } b" => 1}) }
+      # Object keys are Names, where the reserved words are legal.
+      CaidoUtils.to_graphql_value({"null" => 1}).should eq("{ null: 1 }")
     end
 
     it "rejects non-finite floats, which have no GraphQL literal" do
