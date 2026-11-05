@@ -20,8 +20,17 @@ module CaidoUtils
   # §2.9.6, "EnumValue : Name but not `true` or `false` or `null`"): spliced
   # into an enum slot they would silently become a Boolean or null literal.
   def self.safe_enum_value(value : String) : String
-    if !GRAPHQL_NAME_PATTERN.matches?(value) || value.in?("true", "false", "null")
+    if value.in?("true", "false", "null")
       raise ArgumentError.new("Invalid GraphQL enum value: #{value.inspect}")
+    end
+    safe_name(value, "enum value")
+  end
+
+  # Validates a GraphQL Name (e.g. an object field key), where the reserved
+  # words `true`, `false` and `null` are legal.
+  def self.safe_name(value : String, kind : String = "name") : String
+    unless GRAPHQL_NAME_PATTERN.matches?(value)
+      raise ArgumentError.new("Invalid GraphQL #{kind}: #{value.inspect}")
     end
     value
   end
@@ -49,9 +58,7 @@ module CaidoUtils
       safe_enum_value(value.to_s)
     when Hash
       pairs = value.map do |k, v|
-        # Object field keys are plain Names, so `null`/`true` are allowed.
-        key = k.to_s
-        raise ArgumentError.new("Invalid GraphQL name: #{key.inspect}") unless GRAPHQL_NAME_PATTERN.matches?(key)
+        key = safe_name(k.to_s)
         "#{key}: #{to_graphql_value(v)}"
       end
       "{ #{pairs.join(", ")} }"

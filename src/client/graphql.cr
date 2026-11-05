@@ -40,8 +40,8 @@ class CaidoClient
       getter status_code : Int32?
       getter body : String?
 
-      def initialize(message : String, @status_code : Int32? = nil, @body : String? = nil)
-        super(message)
+      def initialize(message : String, @status_code : Int32? = nil, @body : String? = nil, cause : Exception? = nil)
+        super(message, cause)
       end
     end
 
@@ -164,14 +164,14 @@ class CaidoClient
             # OpenSSL::Error is not an IO::Error; wrap it so it surfaces
             # as ConnectionError like every other transport failure.
             if ex.is_a?(OpenSSL::Error)
-              raise TransportError.new("TLS error talking to #{safe_endpoint}: #{ex.message}")
+              raise TransportError.new("TLS error talking to #{safe_endpoint}: #{ex.message}", cause: ex)
             end
           {% end %}
           # HTTP::Client parses the response eagerly, and a malformed one
           # escapes as a bare Exception (bad status line), ArgumentError
           # (bad Content-Length, unknown charset) or Compress::*::Error
           # (corrupt deflate body) — none of them IO::Error.
-          raise TransportError.new("Malformed HTTP response from #{safe_endpoint}: #{ex.message}")
+          raise TransportError.new("Malformed HTTP response from #{safe_endpoint}: #{ex.message}", cause: ex)
         end
       ensure
         client.close
@@ -226,7 +226,7 @@ class CaidoClient
     # name it explicitly so the intent is clear: HTTP-level and connection
     # failures both surface as ConnectionError, never a raw
     # JSON::ParseException or a swallowed status.
-    raise ConnectionError.new("Failed to connect to #{Transport.sanitize_endpoint(@endpoint)}: #{ex.message}")
+    raise ConnectionError.new("Failed to connect to #{Transport.sanitize_endpoint(@endpoint)}: #{ex.message}", ex)
   end
 
   private def check_errors(response)

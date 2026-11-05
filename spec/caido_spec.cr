@@ -43,7 +43,10 @@ private def with_raw_http_server(raw : String, & : String ->)
   server = TCPServer.new("127.0.0.1", 0)
   spawn do
     if socket = server.accept?
-      socket.read(Bytes.new(65536)) rescue nil
+      # Consume the whole request so closing doesn't send an RST.
+      if (request = HTTP::Request.from_io(socket)).is_a?(HTTP::Request)
+        request.body.try(&.skip_to_end)
+      end
       socket.write(raw.to_slice) rescue nil
       socket.close
     end
@@ -127,9 +130,10 @@ describe CaidoClient do
         "HTTP/1.1 200 OK\r\nContent-Encoding: deflate\r\nContent-Length: 5\r\n\r\nhello",
       ].each do |raw|
         with_raw_http_server(raw) do |endpoint|
-          expect_raises(CaidoClient::ConnectionError, /Malformed HTTP response/) do
+          error = expect_raises(CaidoClient::ConnectionError, /Malformed HTTP response/) do
             CaidoClient.new(endpoint).query("{ __typename }")
           end
+          error.cause.try(&.cause).should_not be_nil
         end
       end
     end
