@@ -115,12 +115,14 @@ describe CaidoClient do
         CaidoClient.new(endpoint, "").query("{ __typename }")
         CaidoClient.new(endpoint).query("{ __typename }")
         ENV["CAIDO_AUTH_TOKEN"] = "env-token\n"
+        CaidoClient.new(endpoint).query("{ __typename }")
+        # An explicit blank token means "no token", not "use the env".
         CaidoClient.new(endpoint, " ").query("{ __typename }")
       ensure
         previous ? (ENV["CAIDO_AUTH_TOKEN"] = previous) : ENV.delete("CAIDO_AUTH_TOKEN")
         server.close
       end
-      seen.should eq(["Bearer tok", nil, nil, "Bearer env-token"])
+      seen.should eq(["Bearer tok", nil, nil, "Bearer env-token", nil])
     end
   end
 
@@ -1321,10 +1323,21 @@ describe CaidoClient::Transport do
     it "redacts credentials containing unencoded \"/\", \"?\", \"#\" or \"@\"" do
       # `URI.parse` either rejects these or splits at the first "@"; either
       # way part of the secret used to survive into the message.
-      {"SEC/RET", "SEC?RET", "SEC#RET", "SEC@RET", "S@E/C@RET"}.each do |password|
+      {"SEC/RET", "SEC?RET", "SEC#RET", "SEC@RET", "S@E@C@RET"}.each do |password|
         sanitized = CaidoClient::Transport.sanitize_endpoint("http://user:#{password}@127.0.0.1:1/graphql")
         sanitized.should eq("http://127.0.0.1:1/graphql")
       end
+      # No authority: `user` parses as the scheme.
+      CaidoClient::Transport.sanitize_endpoint("user:SEC@RET@host/graphql").should eq("host/graphql")
+    end
+
+    it "keeps an \"@\" in the path or query that is not part of the userinfo" do
+      CaidoClient::Transport.sanitize_endpoint("http://user:SEC@RET@caido.local/graphql?email=a@b.com")
+        .should eq("http://caido.local/graphql?email=a@b.com")
+      CaidoClient::Transport.sanitize_endpoint("http://user:pass@caido.local/graphql?email=a@b.com")
+        .should eq("http://caido.local/graphql?email=a@b.com")
+      CaidoClient::Transport.sanitize_endpoint("http://caido.local/a@b/c@d")
+        .should eq("http://caido.local/a@b/c@d")
     end
   end
 end

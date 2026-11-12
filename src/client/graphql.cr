@@ -49,25 +49,37 @@ class CaidoClient
     # embed credentials (`https://user:token@caido.local/graphql`), which
     # `HTTP::Client` turns into a Basic auth header — but those credentials
     # must never reach an exception message, a log line, or a bug report.
+    #
+    # Userinfo is what the WHATWG URL standard says it is. A reserved
+    # character ("/", "?", "#") in a password must be percent-encoded: left
+    # raw, it ends the authority, and the URL means something else entirely.
     def self.sanitize_endpoint(endpoint : String) : String
-      # `URI` splits userinfo at the *first* "@", so with an unencoded "@" in
-      # a password the rest of the secret ends up in the host or path.
-      return redact_userinfo(endpoint) if endpoint.count('@') > 1
       uri = URI.parse(endpoint)
+      host = uri.host
+      # No authority at all (`user:pw@host/graphql` parses as scheme "user"):
+      # not a usable endpoint, so redact conservatively.
+      return redact_through_last_at(endpoint) unless host
+      # `URI` splits userinfo at the *first* "@" where WHATWG URL takes the
+      # *last* "@" of the authority, so an unencoded "@" in a password puts
+      # the rest of the secret in `host`.
+      return endpoint.sub(%r{//[^/?#]*@}, "//") if host.includes?('@')
       return endpoint unless uri.user || uri.password
       uri.user = nil
       uri.password = nil
       uri.to_s
     rescue URI::Error
-      redact_userinfo(endpoint)
+      redact_through_last_at(endpoint)
     end
 
-    # Fallback for an endpoint `URI` could not split reliably. A malformed
-    # credential may itself contain "/", "?", "#" or "@" (a raw base64 token,
-    # say), so drop everything from "//" through the *last* "@" — userinfo
-    # ends at the last "@" (WHATWG URL). Over-redacting is the safe direction.
-    private def self.redact_userinfo(endpoint : String) : String
-      endpoint.sub(/\/\/.*@/m, "//")
+    # For an endpoint that cannot be parsed, a credential may itself contain
+    # "/", "?" or "#" (a raw base64 token, say), so there is no telling where
+    # it ends: drop everything up to the last "@". Over-redacting an endpoint
+    # that cannot be used anyway is the safe direction.
+    private def self.redact_through_last_at(endpoint : String) : String
+      return endpoint unless at = endpoint.rindex('@')
+      authority = endpoint.index("//")
+      start = authority && authority < at ? authority + 2 : 0
+      endpoint[0, start] + endpoint[(at + 1)..]
     end
 
     # `connect_timeout` / `read_timeout` are opt-in: left nil the client
@@ -211,7 +223,8 @@ class CaidoClient
     # from a file carries (HTTP::Headers would reject it), and treat a blank
     # token, such as `CAIDO_AUTH_TOKEN=`, as absent instead of sending a
     # malformed `Bearer ` header.
-    auth_token = token.try(&.strip).presence || ENV["CAIDO_AUTH_TOKEN"]?.try(&.strip).presence
+    # An explicitly passed blank token means "no token", not "use the env".
+    auth_token = (token || ENV["CAIDO_AUTH_TOKEN"]?).try(&.strip).presence
     if auth_token
       @instance.add_header("Authorization", "Bearer #{auth_token}")
     end

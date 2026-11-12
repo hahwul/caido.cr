@@ -16,7 +16,7 @@ weight = 1
 CaidoClient.new(endpoint : String, token : String? = nil, connect_timeout : Time::Span? = nil, read_timeout : Time::Span? = nil)
 ```
 
-Creates a client that sends `Authorization: Bearer <token>`. Surrounding whitespace is stripped. When `token` is omitted or blank it falls back to the `CAIDO_AUTH_TOKEN` environment variable; with neither, no `Authorization` header is sent.
+Creates a client that sends `Authorization: Bearer <token>`. Surrounding whitespace is stripped and a blank token sends no header. When `token` is omitted it falls back to the `CAIDO_AUTH_TOKEN` environment variable; with neither, no `Authorization` header is sent.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -77,7 +77,7 @@ puts data.try &.["runtime"]
 | `CaidoClient::ConnectionError` | No GraphQL response was produced: connection failure, timeout, TLS error, invalid endpoint, non-2xx status, or a body that is not a JSON object |
 | `CaidoClient::GraphQLError` | The server answered with `errors`. `#errors` holds the messages, `#raw_errors` the untouched `errors` entry, `#data` any partial `data` |
 
-Both descend from `CaidoClient::Error`. Endpoint credentials (`https://user:token@host/...`) are redacted from every message.
+Both descend from `CaidoClient::Error`. Endpoint userinfo credentials (`https://user:token@host/...`) are redacted from every message; percent-encode any `/`, `?`, `#` or `@` inside them, as RFC 3986 requires.
 
 ## Authentication
 
