@@ -98,6 +98,32 @@ describe CaidoClient do
     end
   end
 
+  describe "bearer token" do
+    it "strips surrounding whitespace and skips a blank token" do
+      seen = [] of String?
+      server = HTTP::Server.new do |context|
+        seen << context.request.headers["Authorization"]?
+        context.response.print %({"data":{}})
+      end
+      address = server.bind_tcp("127.0.0.1", 0)
+      spawn { server.listen }
+      endpoint = "http://127.0.0.1:#{address.port}/graphql"
+      previous = ENV["CAIDO_AUTH_TOKEN"]?
+      begin
+        ENV["CAIDO_AUTH_TOKEN"] = ""
+        CaidoClient.new(endpoint, "tok\n").query("{ __typename }")
+        CaidoClient.new(endpoint, "").query("{ __typename }")
+        CaidoClient.new(endpoint).query("{ __typename }")
+        ENV["CAIDO_AUTH_TOKEN"] = "env-token\n"
+        CaidoClient.new(endpoint, " ").query("{ __typename }")
+      ensure
+        previous ? (ENV["CAIDO_AUTH_TOKEN"] = previous) : ENV.delete("CAIDO_AUTH_TOKEN")
+        server.close
+      end
+      seen.should eq(["Bearer tok", nil, nil, "Bearer env-token"])
+    end
+  end
+
   describe "#query" do
     it "wraps connection failures in ConnectionError" do
       # Port 1 is reserved and unreachable on all platforms — connect

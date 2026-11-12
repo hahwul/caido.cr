@@ -206,7 +206,12 @@ class CaidoClient
   def initialize(@endpoint : String, token : String? = nil, connect_timeout : Time::Span? = nil, read_timeout : Time::Span? = nil)
     @instance = Transport.new(endpoint, connect_timeout, read_timeout)
 
-    auth_token = token || ENV["CAIDO_AUTH_TOKEN"]?
+    # RFC 6750 §2.1: `credentials = "Bearer" 1*SP b64token`, and b64token is
+    # one or more non-whitespace characters. Strip the newline a token read
+    # from a file carries (HTTP::Headers would reject it), and treat a blank
+    # token, such as `CAIDO_AUTH_TOKEN=`, as absent instead of sending a
+    # malformed `Bearer ` header.
+    auth_token = token.try(&.strip).presence || ENV["CAIDO_AUTH_TOKEN"]?.try(&.strip).presence
     if auth_token
       @instance.add_header("Authorization", "Bearer #{auth_token}")
     end

@@ -16,7 +16,7 @@ weight = 1
 CaidoClient.new(endpoint : String, token : String? = nil, connect_timeout : Time::Span? = nil, read_timeout : Time::Span? = nil)
 ```
 
-Creates a client that sends `Authorization: Bearer <token>`. When `token` is omitted it falls back to the `CAIDO_AUTH_TOKEN` environment variable; with neither, no `Authorization` header is sent.
+Creates a client that sends `Authorization: Bearer <token>`. Surrounding whitespace is stripped. When `token` is omitted or blank it falls back to the `CAIDO_AUTH_TOKEN` environment variable; with neither, no `Authorization` header is sent.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
