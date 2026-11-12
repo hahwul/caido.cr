@@ -160,7 +160,10 @@ class CaidoClient
         raise TransportError.new("Invalid GraphQL endpoint #{safe_endpoint}: unencoded \"@\" in the credentials (percent-encode it as %40)")
       end
       client = begin
-        HTTP::Client.new(uri)
+        # Built from a credential-free copy: HTTP::Client echoes the whole URI
+        # in its ArgumentError messages ("Request URI must have host (URI is:
+        # ...)"). Basic auth is applied from `uri` below.
+        HTTP::Client.new(uri.dup.tap { |bare| bare.user = nil; bare.password = nil })
       rescue ex : ArgumentError
         # Missing host, or a scheme HTTP::Client cannot speak.
         raise TransportError.new("Invalid GraphQL endpoint #{safe_endpoint}: #{ex.message}")
@@ -209,6 +212,19 @@ class CaidoClient
 
     private def safe_endpoint : String
       self.class.sanitize_endpoint(@endpoint)
+    end
+
+    # The default `inspect` dumps every instance variable: the endpoint's
+    # userinfo and the `Authorization` header. Show the sanitized endpoint
+    # only, so `p client` / `pp client` never print a credential.
+    def inspect(io : IO) : Nil
+      io << "#<" << self.class.name << " endpoint="
+      safe_endpoint.inspect(io)
+      io << '>'
+    end
+
+    def pretty_print(pp) : Nil
+      pp.text(inspect)
     end
   end
 
@@ -260,6 +276,17 @@ class CaidoClient
     # failures both surface as ConnectionError, never a raw
     # JSON::ParseException or a swallowed status.
     raise ConnectionError.new("Failed to connect to #{Transport.sanitize_endpoint(@endpoint)}: #{ex.message}", ex)
+  end
+
+  # See `Transport#inspect`: never print the token or endpoint credentials.
+  def inspect(io : IO) : Nil
+    io << "#<CaidoClient endpoint="
+    Transport.sanitize_endpoint(@endpoint).inspect(io)
+    io << '>'
+  end
+
+  def pretty_print(pp) : Nil
+    pp.text(inspect)
   end
 
   private def check_errors(response)

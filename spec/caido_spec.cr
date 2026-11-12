@@ -1439,6 +1439,28 @@ describe "CaidoClient#query transport hardening" do
     end
   end
 
+  it "never leaks credentials from an endpoint HTTP::Client rejects" do
+    # HTTP::Client's ArgumentError messages echo the whole URI.
+    {"http://user:sup3rsecret@:8080/graphql", "http://user:sup3rsecret@/graphql",
+     "//user:sup3rsecret@127.0.0.1:1/graphql"}.each do |endpoint|
+      ex = expect_raises(CaidoClient::ConnectionError, /Invalid GraphQL endpoint/) do
+        CaidoClient.new(endpoint).query("{ __typename }")
+      end
+      ex.message.to_s.should_not contain("sup3rsecret")
+    end
+  end
+
+  it "keeps the token and endpoint credentials out of inspect and pp" do
+    client = CaidoClient.new("http://caido:sup3rsecret@127.0.0.1:1/graphql", token: "t0ken")
+    transport = CaidoClient::Transport.new("http://caido:sup3rsecret@127.0.0.1:1/graphql")
+    transport.add_header("Authorization", "Bearer t0ken")
+    {client.inspect, client.pretty_inspect, transport.inspect, transport.pretty_inspect}.each do |text|
+      text.should_not contain("sup3rsecret")
+      text.should_not contain("t0ken")
+      text.should contain("http://127.0.0.1:1/graphql")
+    end
+  end
+
   it "never leaks a password with an unencoded \"/\" or \"@\" through a ConnectionError" do
     # "SEC/RET" makes URI.parse fail; "SEC@RET" makes it take "RET@127.0.0.1"
     # as the host, which then surfaced in the DNS error.
