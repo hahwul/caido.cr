@@ -60,7 +60,7 @@ puts response
 | `InstanceSettings` | Instance configuration |
 | `DNS` | DNS rewrites and upstreams |
 | `UpstreamProxies` | Proxy chaining config |
-| `Tamper` | Request/response tamper rules |
+| `MatchReplace` | Request/response match & replace rules |
 | `Assistant` | AI assistant sessions |
 | `Environments` | Environment variables |
 | `Plugins` | Installed plugins |
@@ -103,7 +103,7 @@ puts response
 | `Workflows` | CRUD and run workflows |
 | `Replay` | Manage replay sessions and collections |
 | `Automate` | Manage automated attack sessions |
-| `Tamper` | Manage tamper rules and collections |
+| `MatchReplace` | Manage match & replace rules and collections |
 | `DNS` | Configure DNS rewrites and upstreams |
 | `UpstreamProxies` | Configure HTTP/SOCKS proxies |
 | `Assistant` | AI assistant session management |
@@ -116,10 +116,14 @@ Handle errors from the GraphQL API:
 
 ```crystal
 begin
-  response = client.query(query)
-  puts response
-rescue ex
-  puts "Error: #{ex.message}"
+  data, _errors, _loading = client.query(query)
+  puts data
+rescue ex : CaidoClient::GraphQLError
+  # The server answered with `errors`; partial data is in ex.data
+  puts "GraphQL error: #{ex.errors.join(", ")}"
+rescue ex : CaidoClient::ConnectionError
+  # Connection failure, timeout, non-2xx status or a non-JSON body
+  puts "Connection error: #{ex.message}"
 end
 ```
 

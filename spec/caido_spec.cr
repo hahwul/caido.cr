@@ -98,6 +98,34 @@ describe CaidoClient do
     end
   end
 
+  describe "bearer token" do
+    it "strips surrounding whitespace and skips a blank token" do
+      seen = [] of String?
+      server = HTTP::Server.new do |context|
+        seen << context.request.headers["Authorization"]?
+        context.response.print %({"data":{}})
+      end
+      address = server.bind_tcp("127.0.0.1", 0)
+      spawn { server.listen }
+      endpoint = "http://127.0.0.1:#{address.port}/graphql"
+      previous = ENV["CAIDO_AUTH_TOKEN"]?
+      begin
+        ENV["CAIDO_AUTH_TOKEN"] = ""
+        CaidoClient.new(endpoint, "tok\n").query("{ __typename }")
+        CaidoClient.new(endpoint, "").query("{ __typename }")
+        CaidoClient.new(endpoint).query("{ __typename }")
+        ENV["CAIDO_AUTH_TOKEN"] = "env-token\n"
+        CaidoClient.new(endpoint).query("{ __typename }")
+        # An explicit blank token means "no token", not "use the env".
+        CaidoClient.new(endpoint, " ").query("{ __typename }")
+      ensure
+        previous ? (ENV["CAIDO_AUTH_TOKEN"] = previous) : ENV.delete("CAIDO_AUTH_TOKEN")
+        server.close
+      end
+      seen.should eq(["Bearer tok", nil, nil, "Bearer env-token", nil])
+    end
+  end
+
   describe "#query" do
     it "wraps connection failures in ConnectionError" do
       # Port 1 is reserved and unreachable on all platforms — connect
@@ -1291,6 +1319,26 @@ describe CaidoClient::Transport do
       sanitized.should_not contain("user")
       sanitized.should eq("https://caido.local/graphql?x=1")
     end
+
+    it "redacts credentials containing unencoded \"/\", \"?\", \"#\" or \"@\"" do
+      # `URI.parse` either rejects these or splits at the first "@"; either
+      # way part of the secret used to survive into the message.
+      {"SEC/RET", "SEC?RET", "SEC#RET", "SEC@RET", "S@E@C@RET"}.each do |password|
+        sanitized = CaidoClient::Transport.sanitize_endpoint("http://user:#{password}@127.0.0.1:1/graphql")
+        sanitized.should eq("http://127.0.0.1:1/graphql")
+      end
+      # No authority: `user` parses as the scheme.
+      CaidoClient::Transport.sanitize_endpoint("user:SEC@RET@host/graphql").should eq("host/graphql")
+    end
+
+    it "keeps an \"@\" in the path or query that is not part of the userinfo" do
+      CaidoClient::Transport.sanitize_endpoint("http://user:SEC@RET@caido.local/graphql?email=a@b.com")
+        .should eq("http://caido.local/graphql?email=a@b.com")
+      CaidoClient::Transport.sanitize_endpoint("http://user:pass@caido.local/graphql?email=a@b.com")
+        .should eq("http://caido.local/graphql?email=a@b.com")
+      CaidoClient::Transport.sanitize_endpoint("http://caido.local/a@b/c@d")
+        .should eq("http://caido.local/a@b/c@d")
+    end
   end
 end
 
@@ -1388,6 +1436,21 @@ describe "CaidoClient#query transport hardening" do
     rescue ex : CaidoClient::ConnectionError
       ex.message.to_s.should_not contain("sup3rsecret")
       ex.message.to_s.should contain("http://127.0.0.1:1/graphql")
+    end
+  end
+
+  it "never leaks a password with an unencoded \"/\" or \"@\" through a ConnectionError" do
+    # "SEC/RET" makes URI.parse fail; "SEC@RET" makes it take "RET@127.0.0.1"
+    # as the host, which then surfaced in the DNS error.
+    {"SEC/RET", "SEC@RET"}.each do |password|
+      client = CaidoClient.new("http://user:#{password}@127.0.0.1:1/graphql")
+      begin
+        client.query("{ __typename }")
+        fail "should have raised ConnectionError"
+      rescue ex : CaidoClient::ConnectionError
+        ex.message.to_s.should_not contain("SEC")
+        ex.message.to_s.should_not contain("RET")
+      end
     end
   end
 

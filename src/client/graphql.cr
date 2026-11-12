@@ -49,16 +49,37 @@ class CaidoClient
     # embed credentials (`https://user:token@caido.local/graphql`), which
     # `HTTP::Client` turns into a Basic auth header — but those credentials
     # must never reach an exception message, a log line, or a bug report.
+    #
+    # Userinfo is what the WHATWG URL standard says it is. A reserved
+    # character ("/", "?", "#") in a password must be percent-encoded: left
+    # raw, it ends the authority, and the URL means something else entirely.
     def self.sanitize_endpoint(endpoint : String) : String
       uri = URI.parse(endpoint)
+      host = uri.host
+      # No authority at all (`user:pw@host/graphql` parses as scheme "user"):
+      # not a usable endpoint, so redact conservatively.
+      return redact_through_last_at(endpoint) unless host
+      # `URI` splits userinfo at the *first* "@" where WHATWG URL takes the
+      # *last* "@" of the authority, so an unencoded "@" in a password puts
+      # the rest of the secret in `host`.
+      return endpoint.sub(%r{//[^/?#]*@}, "//") if host.includes?('@')
       return endpoint unless uri.user || uri.password
       uri.user = nil
       uri.password = nil
       uri.to_s
     rescue URI::Error
-      # Unparseable endpoint: drop everything up to the authority's "@"
-      # rather than echoing a value that may still embed credentials.
-      endpoint.sub(/\/\/[^\/@]*@/, "//")
+      redact_through_last_at(endpoint)
+    end
+
+    # For an endpoint that cannot be parsed, a credential may itself contain
+    # "/", "?" or "#" (a raw base64 token, say), so there is no telling where
+    # it ends: drop everything up to the last "@". Over-redacting an endpoint
+    # that cannot be used anyway is the safe direction.
+    private def self.redact_through_last_at(endpoint : String) : String
+      return endpoint unless at = endpoint.rindex('@')
+      authority = endpoint.index("//")
+      start = authority && authority < at ? authority + 2 : 0
+      endpoint[0, start] + endpoint[(at + 1)..]
     end
 
     # `connect_timeout` / `read_timeout` are opt-in: left nil the client
@@ -132,6 +153,12 @@ class CaidoClient
 
     private def post(request_body : String) : HTTP::Client::Response
       uri = URI.parse(@endpoint)
+      # A host never contains "@" (RFC 3986 reg-name); one here means an
+      # unencoded "@" in the password was taken as the userinfo separator.
+      # Connecting would put the tail of the secret into the DNS error.
+      if uri.host.try(&.includes?('@'))
+        raise TransportError.new("Invalid GraphQL endpoint #{safe_endpoint}: unencoded \"@\" in the credentials (percent-encode it as %40)")
+      end
       client = begin
         HTTP::Client.new(uri)
       rescue ex : ArgumentError
@@ -191,7 +218,13 @@ class CaidoClient
   def initialize(@endpoint : String, token : String? = nil, connect_timeout : Time::Span? = nil, read_timeout : Time::Span? = nil)
     @instance = Transport.new(endpoint, connect_timeout, read_timeout)
 
-    auth_token = token || ENV["CAIDO_AUTH_TOKEN"]?
+    # RFC 6750 §2.1: `credentials = "Bearer" 1*SP b64token`, and b64token is
+    # one or more non-whitespace characters. Strip the newline a token read
+    # from a file carries (HTTP::Headers would reject it), and treat a blank
+    # token, such as `CAIDO_AUTH_TOKEN=`, as absent instead of sending a
+    # malformed `Bearer ` header.
+    # An explicitly passed blank token means "no token", not "use the env".
+    auth_token = (token || ENV["CAIDO_AUTH_TOKEN"]?).try(&.strip).presence
     if auth_token
       @instance.add_header("Authorization", "Bearer #{auth_token}")
     end

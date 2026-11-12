@@ -94,4 +94,4 @@ Verify your token is valid. You can find it in Caido's settings or generate a ne
 
 ### Missing dependencies
 
-Run `shards install` to ensure `crystal-gql` and other dependencies are installed.
+caido.cr has no runtime dependencies beyond the Crystal standard library. Run `shards install` in your project to fetch the `caido` shard itself.
