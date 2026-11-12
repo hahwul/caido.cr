@@ -1291,6 +1291,15 @@ describe CaidoClient::Transport do
       sanitized.should_not contain("user")
       sanitized.should eq("https://caido.local/graphql?x=1")
     end
+
+    it "redacts credentials containing unencoded \"/\", \"?\", \"#\" or \"@\"" do
+      # `URI.parse` either rejects these or splits at the first "@"; either
+      # way part of the secret used to survive into the message.
+      {"SEC/RET", "SEC?RET", "SEC#RET", "SEC@RET", "S@E/C@RET"}.each do |password|
+        sanitized = CaidoClient::Transport.sanitize_endpoint("http://user:#{password}@127.0.0.1:1/graphql")
+        sanitized.should eq("http://127.0.0.1:1/graphql")
+      end
+    end
   end
 end
 
@@ -1388,6 +1397,21 @@ describe "CaidoClient#query transport hardening" do
     rescue ex : CaidoClient::ConnectionError
       ex.message.to_s.should_not contain("sup3rsecret")
       ex.message.to_s.should contain("http://127.0.0.1:1/graphql")
+    end
+  end
+
+  it "never leaks a password with an unencoded \"/\" or \"@\" through a ConnectionError" do
+    # "SEC/RET" makes URI.parse fail; "SEC@RET" makes it take "RET@127.0.0.1"
+    # as the host, which then surfaced in the DNS error.
+    {"SEC/RET", "SEC@RET"}.each do |password|
+      client = CaidoClient.new("http://user:#{password}@127.0.0.1:1/graphql")
+      begin
+        client.query("{ __typename }")
+        fail "should have raised ConnectionError"
+      rescue ex : CaidoClient::ConnectionError
+        ex.message.to_s.should_not contain("SEC")
+        ex.message.to_s.should_not contain("RET")
+      end
     end
   end
 

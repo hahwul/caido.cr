@@ -50,15 +50,24 @@ class CaidoClient
     # `HTTP::Client` turns into a Basic auth header — but those credentials
     # must never reach an exception message, a log line, or a bug report.
     def self.sanitize_endpoint(endpoint : String) : String
+      # `URI` splits userinfo at the *first* "@", so with an unencoded "@" in
+      # a password the rest of the secret ends up in the host or path.
+      return redact_userinfo(endpoint) if endpoint.count('@') > 1
       uri = URI.parse(endpoint)
       return endpoint unless uri.user || uri.password
       uri.user = nil
       uri.password = nil
       uri.to_s
     rescue URI::Error
-      # Unparseable endpoint: drop everything up to the authority's "@"
-      # rather than echoing a value that may still embed credentials.
-      endpoint.sub(/\/\/[^\/@]*@/, "//")
+      redact_userinfo(endpoint)
+    end
+
+    # Fallback for an endpoint `URI` could not split reliably. A malformed
+    # credential may itself contain "/", "?", "#" or "@" (a raw base64 token,
+    # say), so drop everything from "//" through the *last* "@" — userinfo
+    # ends at the last "@" (WHATWG URL). Over-redacting is the safe direction.
+    private def self.redact_userinfo(endpoint : String) : String
+      endpoint.sub(/\/\/.*@/m, "//")
     end
 
     # `connect_timeout` / `read_timeout` are opt-in: left nil the client
@@ -132,6 +141,12 @@ class CaidoClient
 
     private def post(request_body : String) : HTTP::Client::Response
       uri = URI.parse(@endpoint)
+      # A host never contains "@" (RFC 3986 reg-name); one here means an
+      # unencoded "@" in the password was taken as the userinfo separator.
+      # Connecting would put the tail of the secret into the DNS error.
+      if uri.host.try(&.includes?('@'))
+        raise TransportError.new("Invalid GraphQL endpoint #{safe_endpoint}: unencoded \"@\" in the credentials (percent-encode it as %40)")
+      end
       client = begin
         HTTP::Client.new(uri)
       rescue ex : ArgumentError
