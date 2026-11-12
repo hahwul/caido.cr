@@ -156,9 +156,9 @@ query = CaidoQueries::DNS.upstreams
 query = CaidoQueries::UpstreamProxies.http
 query = CaidoQueries::UpstreamProxies.socks
 
-# Tamper rules
-query = CaidoQueries::Tamper.rules
-query = CaidoQueries::Tamper.rule_by_id("rule-id")
+# Match & replace rules
+query = CaidoQueries::MatchReplace.rules
+query = CaidoQueries::MatchReplace.rule_by_id("rule-id")
 
 # Workflows
 query = CaidoQueries::Workflows.all

@@ -14,9 +14,9 @@ HTTP request and response history.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.all` | `first`, `filter?`, `after?` | Get paginated requests |
-| `.by_id` | `id` | Get a single request with full details |
-| `.by_offset` | `offset`, `limit`, `filter` | Get requests with offset pagination |
+| `.all` | `after?`, `first?`, `filter?`, `last?`, `before?`, `scope_id?`, `order?`, `include_request_raw?`, `include_response_raw?` | Get paginated requests |
+| `.by_id` | `id`, `include_request_raw?`, `include_response_raw?` | Get a single request with full details |
+| `.by_offset` | `offset?`, `limit?`, `filter?` | Get requests with offset pagination |
 
 ```crystal
 CaidoQueries::Requests.all(first: 10)
@@ -31,8 +31,8 @@ Target site structure exploration.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.root_entries` | `scope_id` | Get root sitemap entries |
-| `.descendant_entries` | `parent_id`, `depth` | Get child entries (DIRECT or ALL) |
+| `.root_entries` | `scope_id?` | Get root sitemap entries |
+| `.descendant_entries` | `parent_id`, `depth?` | Get child entries (DIRECT or ALL) |
 | `.by_id` | `id` | Get a single sitemap entry |
 
 ```crystal
@@ -47,7 +47,7 @@ Proxy intercept queue and configuration.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.entries` | `first`, `filter?`, `after?` | Get intercepted messages |
+| `.entries` | `after?`, `first?`, `filter?` | Get intercepted messages |
 | `.status` | -- | Get current intercept status |
 | `.options` | -- | Get intercept configuration |
 
@@ -66,7 +66,7 @@ Security findings management.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.all` | `first`, `after?` | Get paginated findings |
+| `.all` | `after?`, `first?`, `filter?` | Get paginated findings |
 | `.by_id` | `id` | Get a single finding |
 | `.reporters` | -- | Get available reporter names |
 
@@ -95,9 +95,11 @@ Request replay session management.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.sessions` | `first`, `after?` | Get replay sessions |
+| `.sessions` | `after?`, `first?` | Get replay sessions |
 | `.session_by_id` | `id` | Get session details |
-| `.collections` | `first`, `after?` | Get session collections |
+| `.collections` | `after?`, `first?` | Get session collections |
+| `.entry_by_id` | `id`, `include_replay_raw?`, `include_request_raw?`, `include_response_raw?` | Get a single replay entry by ID |
+| `.session_entries` | `session_id`, `after?`, `first?`, `include_replay_raw?`, `include_request_raw?`, `include_response_raw?` | Get entries for a replay session |
 
 ## CaidoQueries::Automate
 
@@ -105,9 +107,9 @@ Automated attack session queries.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.sessions` | `first`, `after?` | Get automate sessions |
+| `.sessions` | `after?`, `first?` | Get automate sessions |
 | `.session_by_id` | `id` | Get session details |
-| `.tasks` | `first`, `after?` | Get automate tasks |
+| `.tasks` | `after?`, `first?` | Get automate tasks |
 
 ## CaidoQueries::Viewer
 
@@ -151,14 +153,14 @@ Proxy chaining configuration.
 | `.http` | -- | Get HTTP upstream proxies |
 | `.socks` | -- | Get SOCKS upstream proxies |
 
-## CaidoQueries::Tamper
+## CaidoQueries::MatchReplace
 
-Request/response tampering rules.
+Request/response match & replace rules.
 
 | Method | Parameters | Description |
 |--------|-----------|-------------|
-| `.rules` | -- | Get all tamper rules |
-| `.rule_by_id` | `id` | Get a single tamper rule |
+| `.rules` | -- | Get all match & replace rules |
+| `.rule_by_id` | `id` | Get a single match & replace rule |
 
 ## CaidoQueries::Assistant
 
@@ -177,6 +179,7 @@ Environment variables (cloud feature).
 |--------|-----------|-------------|
 | `.all` | -- | Get all environments |
 | `.context` | -- | Get current environment context |
+| `.by_id` | `id` | Get a single environment by ID |
 
 ## CaidoQueries::Plugins
 
@@ -185,3 +188,28 @@ Plugin management.
 | Method | Parameters | Description |
 |--------|-----------|-------------|
 | `.packages` | -- | Get installed plugin packages |
+
+## CaidoQueries::FilterPresets
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `.all` | -- | Get all filter presets |
+| `.by_id` | `id` | Get a single filter preset by ID |
+
+## CaidoQueries::HostedFiles
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `.all` | -- | Get all hosted files |
+
+## CaidoQueries::Tasks
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `.all` | -- | Get all tasks |
+
+## CaidoQueries::Responses
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `.by_id` | `id` | Get a single response by ID |

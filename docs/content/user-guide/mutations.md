@@ -13,16 +13,15 @@ The `CaidoMutations` module provides pre-built GraphQL mutation strings for crea
 Update request metadata:
 
 ```crystal
-# Update metadata (color and label)
+# Update metadata (color)
 mutation = CaidoMutations::Requests.update_metadata(
-  id: "request-id",
-  color: "red",
-  label: "interesting"
+  request_id: "request-id",
+  color: "red"
 )
 response = client.query(mutation)
 
 # Render a request
-mutation = CaidoMutations::Requests.render(id: "request-id")
+mutation = CaidoMutations::Requests.render(request_id: "request-id")
 response = client.query(mutation)
 ```
 
@@ -37,14 +36,14 @@ mutation = CaidoMutations::Intercept.resume
 
 # Forward an intercepted message
 mutation = CaidoMutations::Intercept.forward_message(
-  id: "message-id",
+  message_id: "message-id",
   request: "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n",
   response: ""
 )
 response = client.query(mutation)
 
 # Drop an intercepted message
-mutation = CaidoMutations::Intercept.drop_message(id: "message-id")
+mutation = CaidoMutations::Intercept.drop_message(message_id: "message-id")
 response = client.query(mutation)
 ```
 
@@ -63,15 +62,15 @@ response = client.query(mutation)
 
 # Update a scope
 mutation = CaidoMutations::Scopes.update(
-  id: "scope-id",
+  scope_id: "scope-id",
   name: "Updated Target",
   allowlist: ["*.example.com"],
-  denylist: []
+  denylist: [] of String
 )
 response = client.query(mutation)
 
 # Delete a scope
-mutation = CaidoMutations::Scopes.delete(id: "scope-id")
+mutation = CaidoMutations::Scopes.delete(scope_id: "scope-id")
 response = client.query(mutation)
 ```
 
@@ -91,18 +90,18 @@ response = client.query(mutation)
 
 # Update a finding
 mutation = CaidoMutations::Findings.update(
-  id: "finding-id",
+  finding_id: "finding-id",
   title: "SQL Injection (Confirmed)",
   description: "Confirmed blind SQL injection"
 )
 response = client.query(mutation)
 
 # Delete findings
-mutation = CaidoMutations::Findings.delete(ids: ["finding-1", "finding-2"])
+mutation = CaidoMutations::Findings.delete(finding_ids: ["finding-1", "finding-2"])
 response = client.query(mutation)
 
 # Export findings
-mutation = CaidoMutations::Findings.export(ids: ["finding-1"])
+mutation = CaidoMutations::Findings.export(finding_ids: ["finding-1"])
 response = client.query(mutation)
 ```
 
@@ -120,18 +119,18 @@ mutation = CaidoMutations::Workflows.create(
 response = client.query(mutation)
 
 # Toggle workflow
-mutation = CaidoMutations::Workflows.toggle(id: "workflow-id", enabled: true)
+mutation = CaidoMutations::Workflows.toggle(workflow_id: "workflow-id", enabled: true)
 response = client.query(mutation)
 
 # Run workflow on a request
 mutation = CaidoMutations::Workflows.run_active(
-  id: "workflow-id",
+  workflow_id: "workflow-id",
   request_id: "request-id"
 )
 response = client.query(mutation)
 
 # Delete workflow
-mutation = CaidoMutations::Workflows.delete(id: "workflow-id")
+mutation = CaidoMutations::Workflows.delete(workflow_id: "workflow-id")
 response = client.query(mutation)
 ```
 
@@ -143,7 +142,7 @@ Manage request replay sessions:
 # Create a replay session
 mutation = CaidoMutations::Replay.create_session(
   name: "Test Session",
-  source: "request-source",
+  request_id: "request-id",
   collection_id: "collection-id"
 )
 response = client.query(mutation)
@@ -173,27 +172,31 @@ response = client.query(mutation)
 
 # Start/pause/resume/cancel tasks
 mutation = CaidoMutations::Automate.start_task(session_id: "session-id")
-mutation = CaidoMutations::Automate.pause_task(id: "task-id")
-mutation = CaidoMutations::Automate.resume_task(id: "task-id")
-mutation = CaidoMutations::Automate.cancel_task(id: "task-id")
+mutation = CaidoMutations::Automate.pause_task(task_id: "task-id")
+mutation = CaidoMutations::Automate.resume_task(task_id: "task-id")
+mutation = CaidoMutations::Automate.cancel_task(task_id: "task-id")
 ```
 
-## Tamper Rules
+## Match & Replace Rules
 
-Manage request/response tampering:
+Manage request/response match & replace rules:
 
 ```crystal
-# Create a tamper rule
-mutation = CaidoMutations::Tamper.create_rule
+# Create a rule
+mutation = CaidoMutations::MatchReplace.create_rule(
+  name: "Add Header",
+  condition: "request.host == 'example.com'",
+  strategy: "add-header-strategy"
+)
 response = client.query(mutation)
 
 # Toggle a rule
-mutation = CaidoMutations::Tamper.toggle_rule(id: "rule-id", enabled: true)
+mutation = CaidoMutations::MatchReplace.toggle_rule(rule_id: "rule-id", enabled: true)
 response = client.query(mutation)
 
 # Manage collections
-mutation = CaidoMutations::Tamper.create_collection
-mutation = CaidoMutations::Tamper.delete_collection(id: "collection-id")
+mutation = CaidoMutations::MatchReplace.create_collection(name: "My Rules")
+mutation = CaidoMutations::MatchReplace.delete_collection(collection_id: "collection-id")
 ```
 
 ## DNS & Proxies
@@ -201,21 +204,22 @@ mutation = CaidoMutations::Tamper.delete_collection(id: "collection-id")
 Configure DNS and upstream proxies:
 
 ```crystal
+# Create calls take the arguments listed in the API reference
+# (e.g. DNS.create_rewrite(name, strategy, source, destination)).
+
 # DNS rewrites
-mutation = CaidoMutations::DNS.create_rewrite
-mutation = CaidoMutations::DNS.delete_rewrite(id: "rewrite-id")
+mutation = CaidoMutations::DNS.toggle_rewrite(rewrite_id: "rewrite-id", enabled: false)
+mutation = CaidoMutations::DNS.delete_rewrite(rewrite_id: "rewrite-id")
 
 # DNS upstreams
-mutation = CaidoMutations::DNS.create_upstream
-mutation = CaidoMutations::DNS.delete_upstream(id: "upstream-id")
+mutation = CaidoMutations::DNS.delete_upstream(upstream_id: "upstream-id")
 
 # HTTP upstream proxies
-mutation = CaidoMutations::UpstreamProxies.create_http
-mutation = CaidoMutations::UpstreamProxies.delete_http(id: "proxy-id")
+mutation = CaidoMutations::UpstreamProxies.toggle_http(proxy_id: "proxy-id", enabled: true)
+mutation = CaidoMutations::UpstreamProxies.delete_http(proxy_id: "proxy-id")
 
 # SOCKS upstream proxies
-mutation = CaidoMutations::UpstreamProxies.create_socks
-mutation = CaidoMutations::UpstreamProxies.delete_socks(id: "proxy-id")
+mutation = CaidoMutations::UpstreamProxies.delete_socks(proxy_id: "proxy-id")
 ```
 
 ## Authentication

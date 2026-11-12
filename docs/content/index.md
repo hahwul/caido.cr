@@ -24,7 +24,7 @@ caido.cr provides a Crystal interface to Caido's GraphQL API with pre-built quer
 - **Pagination & Filtering** -- Built-in utilities for paginated and filtered queries
 - **GraphQL Injection Protection** -- Automatic escaping of user-supplied strings
 - **Authentication** -- Automatic token management via environment variables
-- **Comprehensive Coverage** -- Requests, Intercept, Replay, Automate, Findings, Scopes, Workflows, DNS, Tamper, and more
+- **Comprehensive Coverage** -- Requests, Intercept, Replay, Automate, Findings, Scopes, Workflows, DNS, Match & Replace, and more
 
 ## Installation
 

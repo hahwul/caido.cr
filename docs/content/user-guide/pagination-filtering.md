@@ -33,7 +33,7 @@ clause = CaidoUtils.build_pagination(first: 10)
 
 # With first and after
 clause = CaidoUtils.build_pagination(first: 10, after: "cursor123")
-# => "first: 10, after: \"cursor123\""
+# => "after: \"cursor123\" first: 10"
 ```
 
 ### Offset-Based Pagination
@@ -65,11 +65,11 @@ Use `CaidoUtils.build_filter_clause` to construct filter arguments:
 
 ```crystal
 # With filter
-clause = CaidoUtils.build_filter_clause(filter: "host:example.com")
-# => ", filter: \"host:example.com\""
+clause = CaidoUtils.build_filter_clause("host:example.com")
+# => "filter: \"host:example.com\""
 
-# Empty filter
-clause = CaidoUtils.build_filter_clause(filter: "")
+# No filter
+clause = CaidoUtils.build_filter_clause(nil)
 # => ""
 ```
 
@@ -94,6 +94,7 @@ The function escapes the following characters:
 | tab | `\t` |
 | backspace | `\b` |
 | form feed | `\f` |
+| other control characters (U+0000 to U+001F) | `\u00XX` |
 
 ## Utility Functions
 
@@ -103,17 +104,17 @@ Builds a GraphQL string array from a Crystal array:
 
 ```crystal
 result = CaidoUtils.build_string_array(["*.example.com", "api.test.com"])
-# => "[\"*.example.com\", \"api.test.com\"]"
+# => "\"*.example.com\", \"api.test.com\""   (wrap it in [ ] yourself)
 ```
 
 ### `build_optional_string`
 
-Creates an optional string argument for GraphQL:
+Creates an optional `key: "value"` argument, or `nil` when the value is `nil`:
 
 ```crystal
-result = CaidoUtils.build_optional_string("my-value")
-# => "\"my-value\""
+result = CaidoUtils.build_optional_string("name", "my-value")
+# => "name: \"my-value\""
 
-result = CaidoUtils.build_optional_string("")
-# => ""
+result = CaidoUtils.build_optional_string("name", nil)
+# => nil
 ```

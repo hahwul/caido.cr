@@ -460,7 +460,7 @@ Manage replay sessions and collections.
 # Create a replay session
 mutation = CaidoMutations::Replay.create_session(
   name: "Test Session",
-  source: "request-source",
+  request_id: "request-id",
   collection_id: "collection-id"
 )
 response = client.query mutation
@@ -673,11 +673,19 @@ response = client.query custom_query
 
 ## Error Handling
 
-GraphQL responses include errors in the response body. Check for errors:
+`client.query` returns a `{data, errors, loading}` tuple on success. A response
+carrying `errors` raises `CaidoClient::GraphQLError`; a transport failure
+(connection, timeout, non-2xx status, non-JSON body) raises
+`CaidoClient::ConnectionError`:
 
 ```crystal
-response = client.query query
-# Parse response and check for errors field
+begin
+  data, _errors, _loading = client.query query
+rescue ex : CaidoClient::GraphQLError
+  puts ex.errors
+rescue ex : CaidoClient::ConnectionError
+  puts ex.message
+end
 ```
 
 ## Cloud Features
