@@ -216,7 +216,7 @@ class CaidoClient
 
     # The default `inspect` dumps every instance variable: the endpoint's
     # userinfo and the `Authorization` header. Show the sanitized endpoint
-    # only, so `p client` / `pp client` never print a credential.
+    # only, so `p client` / `pp client` never print userinfo or headers.
     def inspect(io : IO) : Nil
       io << "#<" << self.class.name << " endpoint="
       safe_endpoint.inspect(io)
@@ -278,9 +278,9 @@ class CaidoClient
     raise ConnectionError.new("Failed to connect to #{Transport.sanitize_endpoint(@endpoint)}: #{ex.message}", ex)
   end
 
-  # See `Transport#inspect`: never print the token or endpoint credentials.
+  # See `Transport#inspect`: never print the token or endpoint userinfo.
   def inspect(io : IO) : Nil
-    io << "#<CaidoClient endpoint="
+    io << "#<" << self.class.name << " endpoint="
     Transport.sanitize_endpoint(@endpoint).inspect(io)
     io << '>'
   end
